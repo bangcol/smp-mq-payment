@@ -22,7 +22,7 @@ if %errorlevel% equ 0 (
     echo   BERHASIL! Website online sudah diperbarui.
     echo   Netlify akan otomatis update dalam 30 detik.
     echo.
-    echo   Link website: https://smp-mq-payment.netlify.app
+    echo   Link website: https://payment-smpmqalhuda.netlify.app
     echo  ============================================================
 ) else (
     color 0c
