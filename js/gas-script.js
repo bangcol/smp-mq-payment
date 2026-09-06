@@ -1,184 +1,159 @@
 /**
- * Google Apps Script (Code.gs) Source Template
- * Digunakan untuk menghubungkan Frontend Web App ke Google Spreadsheet Database
+ * ====================================================================
+ * SISTEM PEMBAYARAN SMP MQ AL HUDA BINANGUN
+ * Google Apps Script Backend (Code.gs) - Realtime Multi-Device Sync
+ * Salin dan tempel kode ini ke Google Spreadsheet Anda:
+ * Extensions -> Apps Script -> Code.gs
+ * ====================================================================
  */
 
-const GAS_CODE_TEMPLATE = `/**
- * SISTEM BUKU PEMBAYARAN SISWA - GOOGLE APPS SCRIPT BACKEND (Code.gs)
- * Salin kode ini ke Google Apps Script editor yang terhubung ke Google Spreadsheet Anda!
- */
-
-// 1. Inisialisasi Sheet saat pertama kali dijalankan
+// 1. Inisialisasi Database Sheet (Jalankan Sekali Saja)
 function setupDatabaseSheets() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  
-  const sheets = [
-    { name: 'Siswa', headers: ['NIS', 'NISN', 'Nama', 'Gender', 'Kelas', 'Jurusan', 'NamaWali', 'HPWali', 'Alamat', 'Status'] },
-    { name: 'Transaksi', headers: ['NoKwitansi', 'NIS', 'Tanggal', 'PosID', 'PosNama', 'Bulan', 'Nominal', 'Metode', 'Petugas', 'Catatan'] },
-    { name: 'PosPembayaran', headers: ['ID', 'Kode', 'Nama', 'Tipe', 'Tarip', 'Deskripsi'] },
-    { name: 'Kelas', headers: ['ID', 'Nama', 'Jurusan', 'WaliKelas'] },
-    { name: 'AuditLog', headers: ['Timestamp', 'User', 'Aksi', 'Detail'] }
-  ];
-  
-  sheets.forEach(item => {
-    let sheet = ss.getSheetByName(item.name);
-    if (!sheet) {
-      sheet = ss.insertSheet(item.name);
-      sheet.getRange(1, 1, 1, item.headers.length).setValues([item.headers]).setFontWeight('bold').setBackground('#f1f5f9');
-      sheet.setFrozenRows(1);
+  const sheets = {
+    'Pembayaran': ['No Kwitansi','Tanggal','NIS','Nama Siswa','ID Pos','Nama Pos','Nominal','Metode','Petugas','Status','Keterangan'],
+    'LogAktivitas': ['Waktu','Petugas','Role','Aksi','Detail','Device'],
+    'Siswa': ['NIS','NISN','Nama','Gender','Kelas','Jurusan','Ayah','HP','Status','Thn Masuk'],
+    'Kelas': ['ID','Nama Kelas','Jurusan','Wali Kelas'],
+    'TahunAjaran': ['Tahun Ajaran','Status'],
+    'JenisPembayaran': ['ID','Nama','Kategori','Nominal','Status','Keterangan'],
+    'AppState': ['DataChunk']
+  };
+
+  Object.keys(sheets).forEach(name => {
+    let sheet = ss.getSheetByName(name);
+    if (!sheet) sheet = ss.insertSheet(name);
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(sheets[name]);
+      sheet.getRange(1, 1, 1, sheets[name].length).setFontWeight('bold').setBackground('#0284c7').setFontColor('#ffffff');
     }
   });
-  
-  SpreadsheetApp.getUi().alert("Database Sheets Berhasil Diinisialisasi!");
+
+  SpreadsheetApp.getUi().alert('✅ Database Spreadsheet SMP MQ Berhasil Dikonfigurasi!');
 }
 
-// 2. HTTP Web API Entry Point (GET & POST)
-function doGet(e) {
-  const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : 'getFullState';
+// 2. Simpan AppState dengan aman (Mendukung data besar tanpa batas 50.000 karakter)
+function saveAppState(dataObj) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-
-  if (action === 'getFullState') {
-    let sheetState = ss.getSheetByName('AppState');
-    if (sheetState && sheetState.getLastRow() >= 1) {
-      let raw = sheetState.getRange(1, 1).getValue();
-      if (raw && raw.length > 10) {
-        return ContentService.createTextOutput(raw).setMimeType(ContentService.MimeType.JSON);
-      }
-    }
-    return ContentService.createTextOutput(JSON.stringify({ status: 'empty' })).setMimeType(ContentService.MimeType.JSON);
+  let sheet = ss.getSheetByName('AppState');
+  if (!sheet) {
+    sheet = ss.insertSheet('AppState');
   }
-
-  let responseData = {};
+  sheet.clear();
+  sheet.appendRow(['DataChunk']);
   
-  try {
-    if (action === 'getInitialData') {
-      responseData = {
-        siswa: getSheetDataAsObjects('Siswa'),
-        transaksi: getSheetDataAsObjects('Transaksi'),
-        pos: getSheetDataAsObjects('PosPembayaran'),
-        kelas: getSheetDataAsObjects('Kelas'),
-        logs: getSheetDataAsObjects('AuditLog')
-      };
-    } else if (action === 'getSiswa') {
-      responseData = getSheetDataAsObjects('Siswa');
-    } else if (action === 'getTransaksi') {
-      responseData = getSheetDataAsObjects('Transaksi');
-    }
-    
-    return createJsonResponse({ success: true, data: responseData });
-  } catch (err) {
-    return createJsonResponse({ success: false, error: err.toString() });
+  const jsonStr = typeof dataObj === 'string' ? dataObj : JSON.stringify(dataObj);
+  const chunkSize = 40000;
+  const rows = [];
+  for (let i = 0; i < jsonStr.length; i += chunkSize) {
+    rows.push([jsonStr.substring(i, i + chunkSize)]);
+  }
+  if (rows.length > 0) {
+    sheet.getRange(2, 1, rows.length, 1).setValues(rows);
   }
 }
 
+// 3. Baca AppState lengkap dari sheet
+function getAppState() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('AppState');
+  if (!sheet || sheet.getLastRow() < 2) return null;
+  const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
+  const fullStr = rows.map(r => r[0]).join('');
+  if (!fullStr || fullStr.length < 5) return null;
+  return fullStr;
+}
+
+// 4. Catat Baris Pembayaran ke sheet 'Pembayaran' & 'LogAktivitas'
+function processPaymentTransaction(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheetTrx = ss.getSheetByName('Pembayaran') || ss.insertSheet('Pembayaran');
+  let sheetLog = ss.getSheetByName('LogAktivitas') || ss.insertSheet('LogAktivitas');
+
+  const todayStr = Utilities.formatDate(new Date(), "GMT+7", "yyyyMMdd");
+  const kwitansiNo = payload.kwitansiNo || ("KWT-" + todayStr + "-" + String(sheetTrx.getLastRow()).padStart(4, '0'));
+  const timestamp = Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss");
+
+  sheetTrx.appendRow([
+    kwitansiNo, timestamp, payload.nis, payload.namaSiswa,
+    payload.idPembayaran || payload.posId, payload.namaPembayaran || payload.posNama,
+    payload.nominal, payload.metode, payload.petugas, 'Lunas', payload.keterangan || ''
+  ]);
+
+  sheetLog.appendRow([
+    timestamp, payload.petugas, payload.role || 'Admin', 'PEMBAYARAN',
+    'Pembayaran ' + (payload.namaPembayaran || payload.posNama) + ' NIS ' + payload.nis + ' Rp ' + payload.nominal,
+    'Web App'
+  ]);
+
+  return { status: 'success', kwitansiNo: kwitansiNo };
+}
+
+// 5. Endpoint GET (Dibuka oleh semua HP / Laptop saat memuat data)
+function doGet(e) {
+  try {
+    const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : 'getFullState';
+    const callback = (e && e.parameter) ? e.parameter.callback : null;
+
+    if (action === 'ping') {
+      return respondOutput({ status: 'ok', message: 'API SMP MQ Realtime Aktif!', time: new Date().toISOString() }, callback);
+    }
+
+    const rawState = getAppState();
+    if (!rawState) {
+      return respondOutput({ status: 'empty', message: 'Belum ada data di cloud' }, callback);
+    }
+
+    // Jika JSONP callback diminta
+    if (callback) {
+      return ContentService.createTextOutput(callback + '(' + rawState + ');')
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+
+    return ContentService.createTextOutput(rawState)
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return respondOutput({ status: 'error', message: err.toString() }, e ? e.parameter.callback : null);
+  }
+}
+
+// 6. Endpoint POST (Menerima simpan data dari Laptop / HP)
 function doPost(e) {
   try {
-    const contents = JSON.parse(e.postData.contents);
-    const action = contents.action;
-    const payload = contents.data;
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    
-    let result = { success: true };
-    
+    if (!e || !e.postData || !e.postData.contents) {
+      return respondOutput({ status: 'error', message: 'Data kiriman kosong' });
+    }
+
+    const payload = JSON.parse(e.postData.contents);
+    const action = payload.action;
+
+    // A. Simpan State Database Lengkap (Semua Device 100% Sinkron)
     if (action === 'SAVE_FULL_STATE') {
-      let sheetState = ss.getSheetByName('AppState');
-      if (!sheetState) {
-        sheetState = ss.insertSheet('AppState');
-        sheetState.hideSheet();
+      saveAppState(payload.data);
+      return respondOutput({ status: 'success', message: 'State berhasil disimpan ke cloud' });
+    }
+
+    // B. Simpan Pembayaran
+    if (action === 'PAYMENT') {
+      const res = processPaymentTransaction(payload.data);
+      if (payload.fullState) {
+        saveAppState(payload.fullState);
       }
-      sheetState.getRange(1, 1).setValue(JSON.stringify(payload));
-      return createJsonResponse({ success: true, message: 'AppState synchronized' });
-    } else if (action === 'addTransaksi' || action === 'PAYMENT') {
-      appendRowToSheet('Transaksi', [
-        payload.noKwitansi,
-        payload.nis,
-        payload.tanggal,
-        payload.posId,
-        payload.posNama,
-        payload.bulan || '',
-        payload.nominal,
-        payload.metode,
-        payload.petugas,
-        payload.catatan || ''
-      ]);
-      
-      // Log Audit
-      appendRowToSheet('AuditLog', [
-        new Date().toISOString(),
-        payload.petugas,
-        'Proses Pembayaran',
-        'Pembayaran ' + payload.posNama + ' Rp ' + payload.nominal + ' NIS: ' + payload.nis
-      ]);
-    } else if (action === 'addSiswa') {
-      appendRowToSheet('Siswa', [
-        payload.nis,
-        payload.nisn,
-        payload.nama,
-        payload.gender,
-        payload.kelas,
-        payload.jurusan,
-        payload.namaWali,
-        payload.hpWali,
-        payload.alamat,
-        payload.status
-      ]);
-    } else if (action === 'deleteTransaksi') {
-      deleteRowByValue('Transaksi', 1, payload.noKwitansi);
+      return respondOutput(res);
     }
-    
-    return createJsonResponse(result);
+
+    return respondOutput({ status: 'error', message: 'Aksi tidak dikenal: ' + action });
   } catch (err) {
-    return createJsonResponse({ success: false, error: err.toString() });
+    return respondOutput({ status: 'error', message: err.toString() });
   }
 }
 
-// 3. Helper Functions
-function getSheetDataAsObjects(sheetName) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(sheetName);
-  if (!sheet) return [];
-  
-  const values = sheet.getDataRange().getValues();
-  if (values.length <= 1) return [];
-  
-  const headers = values[0];
-  const results = [];
-  
-  for (let i = 1; i < values.length; i++) {
-    let rowObj = {};
-    for (let j = 0; j < headers.length; j++) {
-      rowObj[headers[j]] = values[i][j];
-    }
-    results.push(rowObj);
+function respondOutput(obj, callback) {
+  const jsonStr = typeof obj === 'string' ? obj : JSON.stringify(obj);
+  if (callback) {
+    return ContentService.createTextOutput(callback + '(' + jsonStr + ');')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
   }
-  return results;
-}
-
-function appendRowToSheet(sheetName, rowArray) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(sheetName);
-  if (!sheet) {
-    setupDatabaseSheets();
-    sheet = ss.getSheetByName(sheetName);
-  }
-  sheet.appendRow(rowArray);
-}
-
-function deleteRowByValue(sheetName, colIndex1Based, searchValue) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(sheetName);
-  if (!sheet) return;
-  const values = sheet.getDataRange().getValues();
-  for (let i = values.length - 1; i >= 1; i--) {
-    if (String(values[i][colIndex1Based - 1]) === String(searchValue)) {
-      sheet.deleteRow(i + 1);
-      break;
-    }
-  }
-}
-
-function createJsonResponse(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
+  return ContentService.createTextOutput(jsonStr)
     .setMimeType(ContentService.MimeType.JSON);
 }
-`;

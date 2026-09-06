@@ -896,13 +896,23 @@
                             </div>
                         </div>
                         <div class="pt-2 border-t border-slate-100 dark:border-slate-700">
-                            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Google Apps Script Web App URL (Opsional - Untuk Integrasi Spreadsheet)</label>
-                            <input type="url" id="setting-script-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm outline-none text-brand-600">
-                            <p class="text-[10px] text-slate-500 mt-1">Kosongkan jika hanya ingin menyimpan data di browser (lokal). Isi URL ini jika Anda sudah mendeploy skrip Apps Script untuk sinkronisasi ke Spreadsheet.</p>
+                            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Google Apps Script Web App URL (Sinkronisasi Otomatis Semua Perangkat)</label>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input type="url" id="setting-script-url" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm outline-none text-brand-600 font-mono">
+                                <button type="button" onclick="testCloudConnection()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-1.5 whitespace-nowrap active:scale-95">
+                                    <i class="fa-solid fa-vial-circle-check"></i>
+                                    <span>Uji Koneksi Realtime</span>
+                                </button>
+                            </div>
+                            <p class="text-[10px] text-slate-500 mt-1">URL ini menghubungkan aplikasi ke Google Spreadsheet sehingga semua input di HP dan laptop selalu satu data yang sama.</p>
                         </div>
-                        <div>
+                        <div class="flex items-center space-x-3 pt-2">
                             <button type="submit" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs rounded-xl shadow transition">
                                 Simpan Perubahan Identitas
+                            </button>
+                            <button type="button" onclick="openGasModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition flex items-center space-x-1.5">
+                                <i class="fa-solid fa-code"></i>
+                                <span>Lihat Kode Backend Apps Script</span>
                             </button>
                         </div>
                     </form>
@@ -1016,11 +1026,10 @@
                         <pre id="apps-script-code-block">
 /* ====================================================================
  * SISTEM PEMBAYARAN SMP MQ AL HUDA BINANGUN
- * Google Apps Script Backend (Code.gs)
- * Paste kode ini di editor Apps Script spreadsheet Anda
+ * Google Apps Script Backend (Code.gs) - Realtime Multi-Device Sync
  * ==================================================================== */
 
-// ---- LANGKAH 1: Jalankan fungsi ini SATU KALI untuk membuat semua sheet ----
+// 1. Inisialisasi Database Sheet (Jalankan Sekali Saja)
 function setupDatabaseSheets() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheets = {
@@ -1030,119 +1039,143 @@ function setupDatabaseSheets() {
     'Kelas': ['ID','Nama Kelas','Jurusan','Wali Kelas'],
     'TahunAjaran': ['Tahun Ajaran','Status'],
     'JenisPembayaran': ['ID','Nama','Kategori','Nominal','Status','Keterangan'],
-    'Setting': ['Key','Value']
+    'AppState': ['DataChunk']
   };
+
   Object.keys(sheets).forEach(name => {
     let sheet = ss.getSheetByName(name);
-    if(!sheet) sheet = ss.insertSheet(name);
-    // Tulis header jika baris 1 masih kosong
-    if(sheet.getLastRow() === 0) {
+    if (!sheet) sheet = ss.insertSheet(name);
+    if (sheet.getLastRow() === 0) {
       sheet.appendRow(sheets[name]);
       sheet.getRange(1, 1, 1, sheets[name].length).setFontWeight('bold').setBackground('#0284c7').setFontColor('#ffffff');
     }
   });
-  SpreadsheetApp.getUi().alert('✅ Database Spreadsheet Berhasil Dikonfigurasi! Semua sheet sudah siap.');
+
+  SpreadsheetApp.getUi().alert('✅ Database Spreadsheet SMP MQ Berhasil Dikonfigurasi!');
 }
 
-// ---- Helper: Baca sheet sebagai Array of Objects ----
-function getSheetData(sheetName) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
-  if(!sheet) return [];
-  const data = sheet.getDataRange().getValues();
-  if(data.length < 2) return [];
-  const headers = data[0];
-  return data.slice(1).map(row => {
-    let obj = {};
-    headers.forEach((h, i) => obj[h] = row[i]);
-    return obj;
-  });
+// 2. Simpan AppState dengan aman (Mendukung data besar tanpa batas 50.000 karakter)
+function saveAppState(dataObj) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('AppState');
+  if (!sheet) {
+    sheet = ss.insertSheet('AppState');
+  }
+  sheet.clear();
+  sheet.appendRow(['DataChunk']);
+  
+  const jsonStr = typeof dataObj === 'string' ? dataObj : JSON.stringify(dataObj);
+  const chunkSize = 40000;
+  const rows = [];
+  for (let i = 0; i < jsonStr.length; i += chunkSize) {
+    rows.push([jsonStr.substring(i, i + chunkSize)]);
+  }
+  if (rows.length > 0) {
+    sheet.getRange(2, 1, rows.length, 1).setValues(rows);
+  }
 }
 
-// ---- Proses Transaksi Pembayaran ----
+// 3. Baca AppState lengkap dari sheet
+function getAppState() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('AppState');
+  if (!sheet || sheet.getLastRow() < 2) return null;
+  const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
+  const fullStr = rows.map(r => r[0]).join('');
+  if (!fullStr || fullStr.length < 5) return null;
+  return fullStr;
+}
+
+// 4. Catat Baris Pembayaran ke sheet 'Pembayaran' & 'LogAktivitas'
 function processPaymentTransaction(payload) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheetTrx = ss.getSheetByName('Pembayaran');
-  const sheetLog = ss.getSheetByName('LogAktivitas');
-  if(!sheetTrx || !sheetLog) {
-    return { status: 'error', message: 'Sheet belum disiapkan. Jalankan setupDatabaseSheets() dahulu!' };
-  }
+  let sheetTrx = ss.getSheetByName('Pembayaran') || ss.insertSheet('Pembayaran');
+  let sheetLog = ss.getSheetByName('LogAktivitas') || ss.insertSheet('LogAktivitas');
 
   const todayStr = Utilities.formatDate(new Date(), "GMT+7", "yyyyMMdd");
   const kwitansiNo = payload.kwitansiNo || ("KWT-" + todayStr + "-" + String(sheetTrx.getLastRow()).padStart(4, '0'));
-  const timestamp = new Date();
+  const timestamp = Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss");
 
   sheetTrx.appendRow([
     kwitansiNo, timestamp, payload.nis, payload.namaSiswa,
-    payload.idPembayaran, payload.namaPembayaran, payload.nominal,
-    payload.metode, payload.petugas, 'Lunas', payload.keterangan || ''
+    payload.idPembayaran || payload.posId, payload.namaPembayaran || payload.posNama,
+    payload.nominal, payload.metode, payload.petugas, 'Lunas', payload.keterangan || ''
   ]);
 
   sheetLog.appendRow([
     timestamp, payload.petugas, payload.role || 'Admin', 'PEMBAYARAN',
-    'Pembayaran ' + payload.namaPembayaran + ' NIS ' + payload.nis + ' Rp ' + payload.nominal,
+    'Pembayaran ' + (payload.namaPembayaran || payload.posNama) + ' NIS ' + payload.nis + ' Rp ' + payload.nominal,
     'Web App'
   ]);
 
   return { status: 'success', kwitansiNo: kwitansiNo };
 }
 
-// ---- Endpoint POST: menerima data dari aplikasi HTML ----
-function doPost(e) {
+// 5. Endpoint GET (Dibuka oleh semua HP / Laptop saat memuat data)
+function doGet(e) {
   try {
-    const payload = JSON.parse(e.postData.contents);
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let result = { status: 'error', message: 'Unknown action' };
+    const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : 'getFullState';
+    const callback = (e && e.parameter) ? e.parameter.callback : null;
 
-    // 1. Simpan State Database Lengkap (agar semua HP & Laptop selalu sinkron realtime)
-    if (payload.action === 'SAVE_FULL_STATE') {
-      let sheetState = ss.getSheetByName('AppState');
-      if (!sheetState) {
-        sheetState = ss.insertSheet('AppState');
-        sheetState.hideSheet();
-      }
-      sheetState.getRange(1, 1).setValue(JSON.stringify(payload.data));
-      result = { status: 'success', message: 'Database cloud berhasil disinkronkan' };
-    }
-    // 2. Transaksi Pembayaran
-    else if (payload.action === 'PAYMENT') {
-      result = processPaymentTransaction(payload.data);
-      if (payload.fullState) {
-        let sheetState = ss.getSheetByName('AppState') || ss.insertSheet('AppState');
-        sheetState.getRange(1, 1).setValue(JSON.stringify(payload.fullState));
-      }
+    if (action === 'ping') {
+      return respondOutput({ status: 'ok', message: 'API SMP MQ Realtime Aktif!', time: new Date().toISOString() }, callback);
     }
 
-    return ContentService
-      .createTextOutput(JSON.stringify(result))
+    const rawState = getAppState();
+    if (!rawState) {
+      return respondOutput({ status: 'empty', message: 'Belum ada data di cloud' }, callback);
+    }
+
+    if (callback) {
+      return ContentService.createTextOutput(callback + '(' + rawState + ');')
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+
+    return ContentService.createTextOutput(rawState)
       .setMimeType(ContentService.MimeType.JSON);
-  } catch(err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ status: 'error', message: err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return respondOutput({ status: 'error', message: err.toString() }, e ? e.parameter.callback : null);
   }
 }
 
-// ---- Endpoint GET: Mengambil data realtime saat dibuka di HP / Laptop / Refresh ----
-function doGet(e) {
-  const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : 'getFullState';
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-
-  if (action === 'getPing') {
-    return ContentService.createTextOutput(JSON.stringify({ status: 'ok', message: 'API Aktif' }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-
-  // Mengembalikan data AppState lengkap
-  let sheetState = ss.getSheetByName('AppState');
-  if (sheetState && sheetState.getLastRow() >= 1) {
-    let raw = sheetState.getRange(1, 1).getValue();
-    if (raw && raw.length > 10) {
-      return ContentService.createTextOutput(raw)
-        .setMimeType(ContentService.MimeType.JSON);
+// 6. Endpoint POST (Menerima simpan data dari Laptop / HP)
+function doPost(e) {
+  try {
+    if (!e || !e.postData || !e.postData.contents) {
+      return respondOutput({ status: 'error', message: 'Data kiriman kosong' });
     }
-  }
 
-  return ContentService.createTextOutput(JSON.stringify({ status: 'empty', message: 'Belum ada data di cloud' }))
+    const payload = JSON.parse(e.postData.contents);
+    const action = payload.action;
+
+    // A. Simpan State Database Lengkap (Semua Device 100% Sinkron)
+    if (action === 'SAVE_FULL_STATE') {
+      saveAppState(payload.data);
+      return respondOutput({ status: 'success', message: 'State berhasil disimpan ke cloud' });
+    }
+
+    // B. Simpan Pembayaran
+    if (action === 'PAYMENT') {
+      const res = processPaymentTransaction(payload.data);
+      if (payload.fullState) {
+        saveAppState(payload.fullState);
+      }
+      return respondOutput(res);
+    }
+
+    return respondOutput({ status: 'error', message: 'Aksi tidak dikenal: ' + action });
+  } catch (err) {
+    return respondOutput({ status: 'error', message: err.toString() });
+  }
+}
+
+function respondOutput(obj, callback) {
+  const jsonStr = typeof obj === 'string' ? obj : JSON.stringify(obj);
+  if (callback) {
+    return ContentService.createTextOutput(callback + '(' + jsonStr + ');')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService.createTextOutput(jsonStr)
     .setMimeType(ContentService.MimeType.JSON);
 }
                         </pre>
@@ -1626,6 +1659,7 @@ function doGet(e) {
             saveState();
             checkSession();
             loadStateFromCloud(false);
+            startRealtimeSyncEngine();
         };
 
         function checkSession() {
@@ -1837,6 +1871,10 @@ function doGet(e) {
             if(window.innerWidth < 1024) {
                 document.getElementById('sidebar').classList.add('-translate-x-full');
             }
+        }
+
+        function openGasModal() {
+            showView('apps-script');
         }
 
         function toggleSidebar() {
@@ -2235,24 +2273,36 @@ function doGet(e) {
          * Sinkronisasi dua arah otomatis antara Laptop & HP melalui Google Sheets
          * ==================================================================== */
         let isSyncingCloud = false;
+        let lastSyncTimestamp = 0;
 
-        function updateSyncBadgeStatus(status) {
+        function updateSyncBadgeStatus(status, extraInfo) {
             const badge = document.getElementById('spreadsheet-status-badge');
             const dot = document.getElementById('sidebar-sync-dot');
             const txt = document.getElementById('sidebar-sync-text');
+            const headerTxt = document.getElementById('btn-sync-text');
 
             if (status === 'online') {
+                const info = extraInfo || 'Terkoneksi Realtime';
                 if (badge) {
-                    badge.innerText = '✅ Terhubung & Sinkron';
+                    badge.innerText = `✅ ${info}`;
                     badge.className = 'text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full';
                 }
                 if (dot) dot.className = 'w-2.5 h-2.5 bg-emerald-400 rounded-full animate-pulse';
                 if (txt) txt.innerText = 'Cloud Terhubung Realtime';
+                if (headerTxt) headerTxt.innerText = 'Sinkron Realtime';
             } else if (status === 'syncing') {
                 if (badge) {
                     badge.innerText = '⏳ Menyinkronkan...';
                     badge.className = 'text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full';
                 }
+            } else if (status === 'warning') {
+                if (badge) {
+                    badge.innerText = '⚠️ Apps Script Perlu Update';
+                    badge.className = 'text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full cursor-pointer';
+                    badge.onclick = testCloudConnection;
+                }
+                if (dot) dot.className = 'w-2.5 h-2.5 bg-amber-400 rounded-full';
+                if (txt) txt.innerText = 'Apps Script Perlu Update';
             } else if (status === 'offline') {
                 if (badge) {
                     badge.innerText = '⚪ Belum Dikonfigurasi / Offline';
@@ -2260,6 +2310,7 @@ function doGet(e) {
                 }
                 if (dot) dot.className = 'w-2.5 h-2.5 bg-amber-400 rounded-full';
                 if (txt) txt.innerText = 'Mode Lokal (Offline)';
+                if (headerTxt) headerTxt.innerText = 'Sinkron Offline';
             }
         }
 
@@ -2290,8 +2341,39 @@ function doGet(e) {
                 const resp = await fetch(fetchUrl);
                 const cloudData = await resp.json();
 
-                if (cloudData && cloudData.status !== 'empty' && Array.isArray(cloudData.students)) {
-                    // Filter dummy NIS if any came from cloud
+                // Deteksi jika Google Apps Script masih versi lama
+                if (cloudData && cloudData.message === "API SMP MQ aktif!") {
+                    updateSyncBadgeStatus('warning');
+                    if (isManual) {
+                        Swal.fire({
+                            title: 'Google Apps Script Perlu Diperbarui',
+                            html: `<div class="text-left text-xs space-y-2">
+                                <p class="text-amber-800 font-bold">Google Apps Script Anda masih menjalankan versi lama yang belum bisa membaca data database realtime.</p>
+                                <p><b>Langkah Mudah (1 Menit):</b></p>
+                                <ol class="list-decimal pl-4 space-y-1">
+                                    <li>Buka Spreadsheet sekolah Anda</li>
+                                    <li>Klik <b>Extensions → Apps Script</b></li>
+                                    <li>Tempel kode terbaru dari tombol <i>"Salin Semua Kode (.gs)"</i></li>
+                                    <li>Klik <b>Deploy → Manage deployments</b></li>
+                                    <li>Klik ikon <b>Pensil (Edit)</b>, ganti Versi ke <b>"New version"</b>, lalu klik <b>Deploy</b></li>
+                                </ol>
+                            </div>`,
+                            icon: 'warning',
+                            confirmButtonColor: '#0284c7'
+                        });
+                    }
+                    return;
+                }
+
+                if (cloudData && cloudData.status === 'empty') {
+                    // Cloud masih kosong, upload state lokal sekarang juga
+                    syncFullStateToCloud();
+                    updateSyncBadgeStatus('online', 'Data Lokal Diunggah');
+                    return;
+                }
+
+                if (cloudData && Array.isArray(cloudData.students) && cloudData.students.length > 0) {
+                    // Filter dummy NIS if any
                     const dummyNisList = ['20251001', '20251002', '20251003', '20251004', '20251005'];
                     cloudData.students = cloudData.students.filter(s => !dummyNisList.includes(s.nis));
                     if (cloudData.transactions) {
@@ -2301,29 +2383,64 @@ function doGet(e) {
                         cloudData.bills = cloudData.bills.filter(b => !dummyNisList.includes(b.nis));
                     }
 
+                    // Smart Merge Transactions: Union of local + cloud by kwitansiNo
+                    const trxMap = new Map();
+                    (cloudData.transactions || []).forEach(t => trxMap.set(t.kwitansiNo, t));
+                    (state.transactions || []).forEach(t => {
+                        if (!trxMap.has(t.kwitansiNo)) {
+                            trxMap.set(t.kwitansiNo, t);
+                        }
+                    });
+                    const mergedTrx = Array.from(trxMap.values()).sort((a, b) => (b.tanggal || '').localeCompare(a.tanggal || ''));
+
+                    // Smart Merge Bills: preserve highest paid amount
+                    const localBillMap = new Map();
+                    (state.bills || []).forEach(b => localBillMap.set(b.id, b));
+                    const mergedBills = (cloudData.bills || []).map(cb => {
+                        const lb = localBillMap.get(cb.id);
+                        if (lb) {
+                            const maxPaid = Math.max(cb.dibayar || 0, lb.dibayar || 0);
+                            return {
+                                ...cb,
+                                dibayar: maxPaid,
+                                status: maxPaid >= cb.nominal ? 'Lunas' : (maxPaid > 0 ? 'Sebagian' : 'Belum Lunas')
+                            };
+                        }
+                        return cb;
+                    });
+
                     // Preserve active login
                     const currentLoggedIn = state.loggedInUser;
-                    state = cloudData;
-                    if (currentLoggedIn) state.loggedInUser = currentLoggedIn;
+                    const prevCount = (state.transactions || []).length;
+                    
+                    state = {
+                        ...cloudData,
+                        transactions: mergedTrx,
+                        bills: (mergedBills && mergedBills.length >= 400) ? mergedBills : (state.bills || mergedBills),
+                        loggedInUser: currentLoggedIn || cloudData.loggedInUser,
+                        lastUpdated: Math.max(cloudData.lastUpdated || 0, state.lastUpdated || 0, Date.now())
+                    };
 
                     localStorage.setItem('paymentAppDB', JSON.stringify(state));
+                    lastSyncTimestamp = Date.now();
+
                     if (state.loggedInUser) {
-                        initializeMainUI();
+                        // Re-render dashboard & active tables jika ada perubahan data
+                        if (prevCount !== mergedTrx.length || isManual) {
+                            initializeMainUI();
+                        }
                     }
-                    updateSyncBadgeStatus('online');
+                    updateSyncBadgeStatus('online', 'Sinkron Realtime');
 
                     if (isManual) {
                         Swal.fire({
                             title: 'Sinkronisasi Berhasil!',
-                            text: `Data realtime berhasil dimuat dari Google Spreadsheet (${state.students.length} siswa, ${state.transactions ? state.transactions.length : 0} transaksi).`,
+                            text: `Data realtime berhasil dimuat (${state.students.length} siswa, ${state.transactions ? state.transactions.length : 0} transaksi).`,
                             icon: 'success',
                             timer: 2000,
                             showConfirmButton: false
                         });
                     }
-                } else if (cloudData && cloudData.status === 'empty') {
-                    syncFullStateToCloud();
-                    updateSyncBadgeStatus('online');
                 } else {
                     updateSyncBadgeStatus('online');
                 }
@@ -2333,7 +2450,7 @@ function doGet(e) {
                 if (isManual) {
                     Swal.fire({
                         title: 'Koneksi Cloud Gagal',
-                        text: 'Tidak dapat menjangkau Google Apps Script. Pastikan URL benar dan saat Deploy hak akses diatur ke "Anyone".',
+                        text: 'Tidak dapat menjangkau Google Apps Script: ' + err.message,
                         icon: 'warning',
                         confirmButtonColor: '#0284c7'
                     });
@@ -2348,6 +2465,7 @@ function doGet(e) {
             const url = state.schoolInfo && state.schoolInfo.scriptUrl ? state.schoolInfo.scriptUrl.trim() : '';
             if (!url) return;
 
+            state.lastUpdated = Date.now();
             const payload = JSON.stringify({
                 action: 'SAVE_FULL_STATE',
                 data: state
@@ -2356,10 +2474,10 @@ function doGet(e) {
             fetch(url, {
                 method: 'POST',
                 mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: payload
             }).then(() => {
-                updateSyncBadgeStatus('online');
+                updateSyncBadgeStatus('online', 'Tersimpan ke Cloud');
             }).catch(err => {
                 console.warn('Gagal sinkron ke cloud:', err);
                 updateSyncBadgeStatus('offline');
@@ -2370,6 +2488,7 @@ function doGet(e) {
             const url = state.schoolInfo && state.schoolInfo.scriptUrl ? state.schoolInfo.scriptUrl.trim() : '';
             if (!url) return;
 
+            state.lastUpdated = Date.now();
             const payload = JSON.stringify({ 
                 action: action, 
                 data: data,
@@ -2379,13 +2498,106 @@ function doGet(e) {
             fetch(url, {
                 method: 'POST',
                 mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: payload
             }).then(() => {
-                updateSyncBadgeStatus('online');
+                updateSyncBadgeStatus('online', 'Tersimpan ke Cloud');
             }).catch(err => {
                 console.warn('Sync ke Spreadsheet gagal:', err.message);
                 updateSyncBadgeStatus('offline');
+            });
+        }
+
+        async function testCloudConnection() {
+            const url = state.schoolInfo && state.schoolInfo.scriptUrl ? state.schoolInfo.scriptUrl.trim() : '';
+            if (!url) {
+                Swal.fire('URL Belum Diisi', 'Silakan masukkan Google Apps Script Web App URL terlebih dahulu.', 'warning');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Menguji Koneksi Realtime...',
+                text: 'Menghubungi Google Apps Script & memeriksa endpoint database...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            try {
+                const testGetUrl = `${url}?action=ping&_t=${Date.now()}`;
+                const respGet = await fetch(testGetUrl);
+                const dataGet = await respGet.json();
+
+                // Periksa apakah skrip masih versi lama
+                if (dataGet && dataGet.message === "API SMP MQ aktif!") {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Google Apps Script Perlu Diperbarui!',
+                        html: `<div class="text-left text-xs space-y-3">
+                            <p class="font-bold text-amber-700">Google Apps Script Anda masih menjalankan versi lama yang belum bisa membaca & menyimpan database realtime.</p>
+                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                <p class="font-bold text-slate-800 mb-1">Cara Aktifkan (Hanya 1 Menit):</p>
+                                <ol class="list-decimal pl-4 space-y-1 text-slate-600">
+                                    <li>Buka Spreadsheet sekolah Anda</li>
+                                    <li>Klik menu <b>Extensions → Apps Script</b></li>
+                                    <li>Hapus semua kode lama di <code>Code.gs</code>, lalu tempel kode baru (klik tombol <i>"Lihat Kode Backend Apps Script"</i> untuk salin)</li>
+                                    <li>Klik tombol biru <b>Deploy → Manage deployments</b></li>
+                                    <li>Klik ikon <b>Pensil (Edit)</b> di samping Web app</li>
+                                    <li>Ganti dropdown <b>Version</b> ke <b>"New version"</b></li>
+                                    <li>Klik <b>Deploy</b></li>
+                                </ol>
+                            </div>
+                        </div>`,
+                        confirmButtonText: 'Buka Kode Backend',
+                        confirmButtonColor: '#0284c7',
+                        showCancelButton: true,
+                        cancelButtonText: 'Tutup'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            openGasModal();
+                        }
+                    });
+                    updateSyncBadgeStatus('warning');
+                    return;
+                }
+
+                // Simpan state terkini ke cloud
+                syncFullStateToCloud();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Koneksi Cloud Realtime Aktif 100%!',
+                    text: 'Google Apps Script berhasil terhubung. Semua input di HP dan laptop akan otomatis sinkron satu data yang sama!',
+                    confirmButtonColor: '#059669'
+                });
+                updateSyncBadgeStatus('online', 'Sinkron Realtime');
+            } catch (err) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Koneksi Cloud Gagal',
+                    text: 'Tidak dapat menjangkau Google Apps Script: ' + err.message + '. Pastikan saat deploy akses disetel ke "Anyone".',
+                    confirmButtonColor: '#dc2626'
+                });
+                updateSyncBadgeStatus('offline');
+            }
+        }
+
+        // Inisialisasi Auto-Sync Realtime Multi-Perangkat (Auto Polling tiap 8 detik)
+        function startRealtimeSyncEngine() {
+            if (window.cloudSyncInterval) clearInterval(window.cloudSyncInterval);
+            window.cloudSyncInterval = setInterval(() => {
+                if (!isSyncingCloud && document.visibilityState !== 'hidden') {
+                    loadStateFromCloud(false);
+                }
+            }, 8000);
+
+            // Sinkron instan saat tab dibuka kembali atau layar HP dinyalakan
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    loadStateFromCloud(false);
+                }
+            });
+            window.addEventListener('focus', () => {
+                loadStateFromCloud(false);
             });
         }
 
