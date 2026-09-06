@@ -1578,7 +1578,17 @@ function respondOutput(obj, callback) {
         let selectedInvoiceNis = null;
 
         function saveState() {
-            localStorage.setItem('paymentAppDB', JSON.stringify(state));
+            state.lastUpdated = Date.now();
+            try {
+                localStorage.setItem('paymentAppDB', JSON.stringify(state));
+                // Backup cadangan bertingkat agar data tidak pernah hilang
+                if (state.schoolInfo) localStorage.setItem('paymentApp_schoolInfo', JSON.stringify(state.schoolInfo));
+                if (state.students && state.students.length > 0) localStorage.setItem('paymentApp_students', JSON.stringify(state.students));
+                if (state.transactions && state.transactions.length > 0) localStorage.setItem('paymentApp_transactions', JSON.stringify(state.transactions));
+                if (state.bills && state.bills.length > 0) localStorage.setItem('paymentApp_bills', JSON.stringify(state.bills));
+            } catch (err) {
+                console.error('LocalStorage write error:', err);
+            }
             syncFullStateToCloud();
         }
 
@@ -1592,7 +1602,7 @@ function respondOutput(obj, callback) {
                 }
             }
 
-            // Restore dedicated schoolInfo if saved by user
+            // Pulihkan dari cadangan terpisah jika ada data yang kosong
             const persistentSchoolInfo = localStorage.getItem('paymentApp_schoolInfo');
             if (persistentSchoolInfo) {
                 try {
@@ -1601,6 +1611,25 @@ function respondOutput(obj, callback) {
                     state.schoolInfo = { ...state.schoolInfo, ...parsedInfo };
                 } catch(e) {
                     console.error('Error parsing persistentSchoolInfo', e);
+                }
+            }
+
+            if (!state.students || state.students.length === 0) {
+                const bkStudents = localStorage.getItem('paymentApp_students');
+                if (bkStudents) {
+                    try { state.students = JSON.parse(bkStudents); } catch(e){}
+                }
+            }
+            if (!state.transactions || state.transactions.length === 0) {
+                const bkTrx = localStorage.getItem('paymentApp_transactions');
+                if (bkTrx) {
+                    try { state.transactions = JSON.parse(bkTrx); } catch(e){}
+                }
+            }
+            if (!state.bills || state.bills.length === 0) {
+                const bkBills = localStorage.getItem('paymentApp_bills');
+                if (bkBills) {
+                    try { state.bills = JSON.parse(bkBills); } catch(e){}
                 }
             }
 
@@ -1630,7 +1659,7 @@ function respondOutput(obj, callback) {
                 ];
             }
 
-            // Sync students: Ensure all 34 authoritative students exist
+            // Sync students: Ensure authoritative initial students exist without overwriting new ones
             if (!state.students) state.students = [];
             const existingNisMap = new Map();
             state.students.forEach(s => existingNisMap.set(s.nis, s));
@@ -1658,7 +1687,7 @@ function respondOutput(obj, callback) {
                 state.bills = state.bills.filter(b => !dummyNisList.includes(b.nis));
             }
 
-            // Sync transactions: Ensure the 3 latest transactions exist
+            // Sync transactions: Ensure initial transactions exist without removing user transactions
             if (!state.transactions) state.transactions = [];
             const existingKwtSet = new Set(state.transactions.map(t => t.kwitansiNo));
             INITIAL_TRANSACTIONS.forEach(t => {
@@ -1667,10 +1696,8 @@ function respondOutput(obj, callback) {
                 }
             });
 
-            // Ensure bills are present for all 34 students
-            if (!state.bills || state.bills.length < 400) {
-                initGeneratedBills();
-            }
+            // Ensure bills are present for all students (Non-destructive: NEVER wipes existing bills)
+            ensureBillsForStudents();
 
             saveState();
             checkSession();
@@ -1764,103 +1791,139 @@ function respondOutput(obj, callback) {
             updateRoleUI();
         }
 
-        // Initialize clean bills for students across 12 months for SPP & other items
-        function initGeneratedBills() {
+        // Pastikan tagihan siswa lengkap tanpa pernah menghapus tagihan yang sudah ada / sudah dibayar
+        function ensureBillsForStudents() {
+            if (!state.bills) state.bills = [];
+            const existingBillIds = new Set(state.bills.map(b => b.id));
             const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-            state.bills = [];
 
             state.students.forEach(st => {
                 if (st.thnMasuk === '2026' || st.kelas === 'Kelas VII') {
                     // 7 Siswa baru Kelas VII (thnMasuk 2026)
-                    state.bills.push({
-                        id: `BILL-POS1-${st.nis}`,
-                        nis: st.nis,
-                        posId: 'POS1',
-                        namaPos: 'SPP Bulanan',
-                        kategori: 'Bulanan',
-                        nominal: 300000,
-                        dibayar: 0,
-                        status: 'Belum Lunas'
-                    });
-                    state.bills.push({
-                        id: `BILL-POS2-${st.nis}`,
-                        nis: st.nis,
-                        posId: 'POS2',
-                        namaPos: 'Uang Seragam Lengkap',
-                        kategori: 'Tahunan',
-                        nominal: 1200000,
-                        dibayar: 0,
-                        status: 'Belum Lunas'
-                    });
-                    state.bills.push({
-                        id: `BILL-POS3-${st.nis}`,
-                        nis: st.nis,
-                        posId: 'POS3',
-                        namaPos: 'Uang Gedung / Infaq Bangunan',
-                        kategori: 'Bebas',
-                        nominal: 3000000,
-                        dibayar: 0,
-                        status: 'Belum Lunas'
-                    });
-                    state.bills.push({
-                        id: `BILL-POS4-${st.nis}`,
-                        nis: st.nis,
-                        posId: 'POS4',
-                        namaPos: 'Modul LKS & Buku',
-                        kategori: 'Sekali',
-                        nominal: 450000,
-                        dibayar: 0,
-                        status: 'Belum Lunas'
-                    });
+                    const b1 = `BILL-POS1-${st.nis}`;
+                    if (!existingBillIds.has(b1)) {
+                        state.bills.push({
+                            id: b1,
+                            nis: st.nis,
+                            posId: 'POS1',
+                            namaPos: 'SPP Bulanan',
+                            kategori: 'Bulanan',
+                            nominal: 300000,
+                            dibayar: 0,
+                            status: 'Belum Lunas'
+                        });
+                        existingBillIds.add(b1);
+                    }
+
+                    const b2 = `BILL-POS2-${st.nis}`;
+                    if (!existingBillIds.has(b2)) {
+                        state.bills.push({
+                            id: b2,
+                            nis: st.nis,
+                            posId: 'POS2',
+                            namaPos: 'Uang Seragam Lengkap',
+                            kategori: 'Tahunan',
+                            nominal: 1200000,
+                            dibayar: 0,
+                            status: 'Belum Lunas'
+                        });
+                        existingBillIds.add(b2);
+                    }
+
+                    const b3 = `BILL-POS3-${st.nis}`;
+                    if (!existingBillIds.has(b3)) {
+                        state.bills.push({
+                            id: b3,
+                            nis: st.nis,
+                            posId: 'POS3',
+                            namaPos: 'Uang Gedung / Infaq Bangunan',
+                            kategori: 'Bebas',
+                            nominal: 3000000,
+                            dibayar: 0,
+                            status: 'Belum Lunas'
+                        });
+                        existingBillIds.add(b3);
+                    }
+
+                    const b4 = `BILL-POS4-${st.nis}`;
+                    if (!existingBillIds.has(b4)) {
+                        state.bills.push({
+                            id: b4,
+                            nis: st.nis,
+                            posId: 'POS4',
+                            namaPos: 'Modul LKS & Buku',
+                            kategori: 'Sekali',
+                            nominal: 450000,
+                            dibayar: 0,
+                            status: 'Belum Lunas'
+                        });
+                        existingBillIds.add(b4);
+                    }
                 } else {
                     // 27 Siswa angkatan 2025 (Kelas VIII & IX)
                     months.forEach((m, idx) => {
-                        let dibayar = 0;
-                        let status = 'Belum Lunas';
-                        if (st.nis === '20252001' && (idx === 0 || idx === 1)) {
-                            dibayar = 300000;
-                            status = 'Lunas';
-                        } else if (st.nis === '20252008' && idx === 0) {
-                            dibayar = 300000;
-                            status = 'Lunas';
+                        const bid = `BILL-SPP-${st.nis}-${idx}`;
+                        if (!existingBillIds.has(bid)) {
+                            let dibayar = 0;
+                            let status = 'Belum Lunas';
+                            if (st.nis === '20252001' && (idx === 0 || idx === 1)) {
+                                dibayar = 300000;
+                                status = 'Lunas';
+                            } else if (st.nis === '20252008' && idx === 0) {
+                                dibayar = 300000;
+                                status = 'Lunas';
+                            }
+                            state.bills.push({
+                                id: bid,
+                                nis: st.nis,
+                                posId: 'POS1',
+                                namaPos: `SPP ${m}`,
+                                kategori: 'Bulanan',
+                                nominal: 300000,
+                                dibayar: dibayar,
+                                status: status
+                            });
+                            existingBillIds.add(bid);
                         }
+                    });
+
+                    // Seragam Tahunan
+                    const bSeragam = `BILL-SERAGAM-${st.nis}`;
+                    if (!existingBillIds.has(bSeragam)) {
                         state.bills.push({
-                            id: `BILL-SPP-${st.nis}-${idx}`,
+                            id: bSeragam,
                             nis: st.nis,
-                            posId: 'POS1',
-                            namaPos: `SPP ${m}`,
-                            kategori: 'Bulanan',
-                            nominal: 300000,
-                            dibayar: dibayar,
-                            status: status
+                            posId: 'POS2',
+                            namaPos: 'Uang Seragam Lengkap',
+                            kategori: 'Tahunan',
+                            nominal: 1200000,
+                            dibayar: 1200000,
+                            status: 'Lunas'
                         });
-                    });
+                        existingBillIds.add(bSeragam);
+                    }
 
-                    // Seragam Tahunan (Sudah lunas Rp 1.200.000)
-                    state.bills.push({
-                        id: `BILL-SERAGAM-${st.nis}`,
-                        nis: st.nis,
-                        posId: 'POS2',
-                        namaPos: 'Uang Seragam Lengkap',
-                        kategori: 'Tahunan',
-                        nominal: 1200000,
-                        dibayar: 1200000,
-                        status: 'Lunas'
-                    });
-
-                    // Uang Gedung Bebas (Cicilan masuk Rp 1.500.000)
-                    state.bills.push({
-                        id: `BILL-GEDUNG-${st.nis}`,
-                        nis: st.nis,
-                        posId: 'POS3',
-                        namaPos: 'Uang Gedung / Infaq Bangunan',
-                        kategori: 'Bebas',
-                        nominal: 3000000,
-                        dibayar: 1500000,
-                        status: 'Belum Lunas'
-                    });
+                    // Uang Gedung Bebas
+                    const bGedung = `BILL-GEDUNG-${st.nis}`;
+                    if (!existingBillIds.has(bGedung)) {
+                        state.bills.push({
+                            id: bGedung,
+                            nis: st.nis,
+                            posId: 'POS3',
+                            namaPos: 'Uang Gedung / Infaq Bangunan',
+                            kategori: 'Bebas',
+                            nominal: 3000000,
+                            dibayar: 1500000,
+                            status: 'Belum Lunas'
+                        });
+                        existingBillIds.add(bGedung);
+                    }
                 }
             });
+        }
+
+        function initGeneratedBills() {
+            ensureBillsForStudents();
         }
 
         /* NAVIGATION & ROLE CONTROLLER */
@@ -2399,7 +2462,20 @@ function respondOutput(obj, callback) {
                         cloudData.bills = cloudData.bills.filter(b => !dummyNisList.includes(b.nis));
                     }
 
-                    // Smart Merge Transactions: Union of local + cloud by kwitansiNo
+                    // 1. Smart Merge Students (Union local + cloud by NIS)
+                    const studentMap = new Map();
+                    (state.students || []).forEach(s => studentMap.set(s.nis, s));
+                    (cloudData.students || []).forEach(cs => {
+                        if (!studentMap.has(cs.nis)) {
+                            studentMap.set(cs.nis, cs);
+                        } else {
+                            const ls = studentMap.get(cs.nis);
+                            studentMap.set(cs.nis, { ...cs, ...ls });
+                        }
+                    });
+                    const mergedStudents = Array.from(studentMap.values());
+
+                    // 2. Smart Merge Transactions (Union local + cloud by kwitansiNo)
                     const trxMap = new Map();
                     (cloudData.transactions || []).forEach(t => trxMap.set(t.kwitansiNo, t));
                     (state.transactions || []).forEach(t => {
@@ -2409,27 +2485,57 @@ function respondOutput(obj, callback) {
                     });
                     const mergedTrx = Array.from(trxMap.values()).sort((a, b) => (b.tanggal || '').localeCompare(a.tanggal || ''));
 
-                    // Smart Merge Bills: preserve highest paid amount
-                    const localBillMap = new Map();
-                    (state.bills || []).forEach(b => localBillMap.set(b.id, b));
-                    const mergedBills = (cloudData.bills || []).map(cb => {
-                        const lb = localBillMap.get(cb.id);
+                    // 3. Smart Merge Bills (Union local + cloud by id, keeping highest paid amount)
+                    const billMap = new Map();
+                    (state.bills || []).forEach(b => billMap.set(b.id, b));
+                    (cloudData.bills || []).forEach(cb => {
+                        const lb = billMap.get(cb.id);
                         if (lb) {
                             const maxPaid = Math.max(cb.dibayar || 0, lb.dibayar || 0);
-                            return {
+                            const nom = cb.nominal || lb.nominal || 0;
+                            billMap.set(cb.id, {
                                 ...cb,
+                                ...lb,
                                 dibayar: maxPaid,
-                                status: maxPaid >= cb.nominal ? 'Lunas' : (maxPaid > 0 ? 'Sebagian' : 'Belum Lunas')
-                            };
+                                status: maxPaid >= nom ? 'Lunas' : (maxPaid > 0 ? 'Sebagian' : 'Belum Lunas')
+                            });
+                        } else {
+                            billMap.set(cb.id, cb);
                         }
-                        return cb;
                     });
+                    const mergedBills = Array.from(billMap.values());
 
-                    // Preserve active login
-                    const currentLoggedIn = state.loggedInUser;
-                    const prevCount = (state.transactions || []).length;
+                    // 4. Smart Merge Kelases
+                    const kelasMap = new Map();
+                    (state.kelases || []).forEach(k => kelasMap.set(k.nama || k.id, k));
+                    (cloudData.kelases || []).forEach(ck => {
+                        if (!kelasMap.has(ck.nama || ck.id)) {
+                            kelasMap.set(ck.nama || ck.id, ck);
+                        }
+                    });
+                    const mergedKelases = Array.from(kelasMap.values());
 
-                    // Preserve and merge schoolInfo safely so user settings never evaporate
+                    // 5. Smart Merge Tahun Ajarans
+                    const taMap = new Map();
+                    (state.tahunAjarans || []).forEach(t => taMap.set(t.ta, t));
+                    (cloudData.tahunAjarans || []).forEach(ct => {
+                        if (!taMap.has(ct.ta)) {
+                            taMap.set(ct.ta, ct);
+                        }
+                    });
+                    const mergedTahunAjarans = Array.from(taMap.values());
+
+                    // 6. Smart Merge Jenis Pembayaran (POS)
+                    const posMap = new Map();
+                    (state.jenisPembayaran || []).forEach(p => posMap.set(p.id, p));
+                    (cloudData.jenisPembayaran || []).forEach(cp => {
+                        if (!posMap.has(cp.id)) {
+                            posMap.set(cp.id, cp);
+                        }
+                    });
+                    const mergedJenisPembayaran = Array.from(posMap.values());
+
+                    // 7. Smart Merge School Info
                     const persistentSchoolInfo = localStorage.getItem('paymentApp_schoolInfo');
                     let savedLocalSchoolInfo = state.schoolInfo || {};
                     if (persistentSchoolInfo) {
@@ -2442,23 +2548,56 @@ function respondOutput(obj, callback) {
                         bendahara: (cloudData.schoolInfo && cloudData.schoolInfo.bendahara) || savedLocalSchoolInfo.bendahara || 'Ust. Yuli',
                         scriptUrl: (cloudData.schoolInfo && cloudData.schoolInfo.scriptUrl) || savedLocalSchoolInfo.scriptUrl || ''
                     };
-                    
+
+                    // Detect if local had newer items that need to be uploaded to cloud
+                    const localHadNewData = (
+                        mergedStudents.length > (cloudData.students || []).length ||
+                        mergedTrx.length > (cloudData.transactions || []).length ||
+                        mergedBills.length > (cloudData.bills || []).length ||
+                        mergedKelases.length > (cloudData.kelases || []).length ||
+                        mergedTahunAjarans.length > (cloudData.tahunAjarans || []).length
+                    );
+
+                    // Preserve active login & count comparison
+                    const currentLoggedIn = state.loggedInUser;
+                    const prevTrxCount = (state.transactions || []).length;
+                    const prevStudentCount = (state.students || []).length;
+
                     state = {
                         ...cloudData,
                         schoolInfo: mergedSchoolInfo,
+                        students: mergedStudents,
                         transactions: mergedTrx,
-                        bills: (mergedBills && mergedBills.length >= 400) ? mergedBills : (state.bills || mergedBills),
+                        bills: mergedBills,
+                        kelases: mergedKelases.length > 0 ? mergedKelases : state.kelases,
+                        tahunAjarans: mergedTahunAjarans.length > 0 ? mergedTahunAjarans : state.tahunAjarans,
+                        jenisPembayaran: mergedJenisPembayaran.length > 0 ? mergedJenisPembayaran : state.jenisPembayaran,
+                        activeTA: state.activeTA || cloudData.activeTA || '2026/2027',
                         loggedInUser: currentLoggedIn || cloudData.loggedInUser,
                         lastUpdated: Math.max(cloudData.lastUpdated || 0, state.lastUpdated || 0, Date.now())
                     };
 
-                    localStorage.setItem('paymentAppDB', JSON.stringify(state));
+                    // Save safely to multi-tier localStorage
+                    try {
+                        localStorage.setItem('paymentAppDB', JSON.stringify(state));
+                        localStorage.setItem('paymentApp_schoolInfo', JSON.stringify(state.schoolInfo));
+                        localStorage.setItem('paymentApp_students', JSON.stringify(state.students));
+                        localStorage.setItem('paymentApp_transactions', JSON.stringify(state.transactions));
+                        localStorage.setItem('paymentApp_bills', JSON.stringify(state.bills));
+                    } catch(e) {
+                        console.error('LocalStorage write error in cloud sync:', e);
+                    }
+
                     lastSyncTimestamp = Date.now();
+
+                    // If local had new data that cloud lacked, sync the merged state back to cloud immediately
+                    if (localHadNewData) {
+                        syncFullStateToCloud();
+                    }
 
                     if (state.loggedInUser) {
                         renderSettings();
-                        // Re-render dashboard & active tables jika ada perubahan data
-                        if (prevCount !== mergedTrx.length || isManual) {
+                        if (prevTrxCount !== mergedTrx.length || prevStudentCount !== mergedStudents.length || isManual) {
                             initializeMainUI();
                         }
                     }
