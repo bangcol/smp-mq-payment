@@ -1213,7 +1213,7 @@ function respondOutput(obj, callback) {
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Metode Pembayaran</label>
                     <select id="modal-bayar-metode" class="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-semibold outline-none">
-                        <option value="Cash / Tunai">Cash / Tunai (Kasir Sekolah)</option>
+                        <option value="Cash / Tunai">Cash / Tunai (Bendahara Sekolah)</option>
                         <option value="Transfer Bank">Transfer Bank (BCA / Mandiri)</option>
                         <option value="QRIS">QRIS Statis Sekolah</option>
                     </select>
@@ -1318,9 +1318,9 @@ function respondOutput(obj, callback) {
                         <span class="text-[9px] text-slate-400 mt-1 block">Scan Verifikasi Keaslian</span>
                     </div>
                     <div>
-                        <p class="text-slate-500 text-[11px]" id="kwt-city-date">Jakarta, 29 Juli 2026</p>
-                        <p class="text-slate-500 text-[11px] mb-8">Petugas Kasir,</p>
-                        <p class="font-bold border-b border-slate-400 inline-block px-4" id="kwt-petugas">Maryati, M.Pd</p>
+                        <p class="text-slate-500 text-[11px]" id="kwt-city-date">Binangun, 29 Juli 2026</p>
+                        <p class="text-slate-500 text-[11px] mb-8" id="kwt-petugas-title">Bendahara Sekolah,</p>
+                        <p class="font-bold border-b border-slate-400 inline-block px-4" id="kwt-petugas">Ust. Yuli</p>
                     </div>
                 </div>
             </div>
@@ -1426,7 +1426,7 @@ function respondOutput(obj, callback) {
                             <span>• Bank BRI: <b>098-765-4321</b> (a.n. SMP MQ AL HUDA)</span>
                         </div>
                         <div>
-                            <span>• Tunai di Kasir Keuangan Sekolah</span><br>
+                            <span>• Tunai langsung ke Bendahara Sekolah</span><br>
                             <span>• Harap konfirmasi bukti transfer ke Bagian Keuangan.</span>
                         </div>
                     </div>
@@ -1794,29 +1794,63 @@ function respondOutput(obj, callback) {
         // Pastikan tagihan siswa lengkap tanpa pernah menghapus tagihan yang sudah ada / sudah dibayar
         function ensureBillsForStudents() {
             if (!state.bills) state.bills = [];
-            const existingBillIds = new Set(state.bills.map(b => b.id));
             const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
-            state.students.forEach(st => {
-                if (st.thnMasuk === '2026' || st.kelas === 'Kelas VII') {
-                    // 7 Siswa baru Kelas VII (thnMasuk 2026)
-                    const b1 = `BILL-POS1-${st.nis}`;
-                    if (!existingBillIds.has(b1)) {
-                        state.bills.push({
-                            id: b1,
-                            nis: st.nis,
-                            posId: 'POS1',
-                            namaPos: 'SPP Bulanan',
-                            kategori: 'Bulanan',
-                            nominal: 300000,
-                            dibayar: 0,
-                            status: 'Belum Lunas'
-                        });
-                        existingBillIds.add(b1);
-                    }
+            const posBulanan = (state.jenisPembayaran || []).find(p => p.kategori === 'Bulanan') || { id: 'POS1', nama: 'SPP Bulanan', nominal: 300000 };
+            const sppRate = posBulanan.nominal || 300000;
 
+            state.students.forEach(st => {
+                // 1. Convert old single 'SPP Bulanan' bill (BILL-POS1-*) if present
+                const oldBulananIdx = state.bills.findIndex(b => b.nis === st.nis && (b.id === `BILL-POS1-${st.nis}` || b.namaPos === 'SPP Bulanan'));
+                let oldPaidAmount = 0;
+                if (oldBulananIdx !== -1) {
+                    oldPaidAmount = state.bills[oldBulananIdx].dibayar || 0;
+                    state.bills.splice(oldBulananIdx, 1);
+                }
+
+                // 2. Ensure all 12 monthly SPP bills exist
+                months.forEach((m, idx) => {
+                    const bid = `BILL-SPP-${st.nis}-${idx}`;
+                    let existingBill = state.bills.find(b => b.nis === st.nis && (
+                        b.id === bid || 
+                        b.namaPos === `SPP ${m}` || 
+                        b.namaPos === `SPP Bulanan (${m})` ||
+                        (b.kategori === 'Bulanan' && b.namaPos.toLowerCase().includes(m.toLowerCase()))
+                    ));
+
+                    if (!existingBill) {
+                        let dibayar = 0;
+                        let status = 'Belum Lunas';
+                        if (st.nis === '20252001' && (idx === 0 || idx === 1)) {
+                            dibayar = sppRate;
+                            status = 'Lunas';
+                        } else if (st.nis === '20252008' && idx === 0) {
+                            dibayar = sppRate;
+                            status = 'Lunas';
+                        } else if (oldPaidAmount > 0 && idx === 0) {
+                            dibayar = oldPaidAmount;
+                            status = dibayar >= sppRate ? 'Lunas' : 'Belum Lunas';
+                            oldPaidAmount = 0;
+                        }
+
+                        state.bills.push({
+                            id: bid,
+                            nis: st.nis,
+                            posId: posBulanan.id || 'POS1',
+                            namaPos: `SPP ${m}`,
+                            kategori: 'Bulanan',
+                            nominal: sppRate,
+                            dibayar: dibayar,
+                            status: status
+                        });
+                    }
+                });
+
+                // 3. Ensure Non-SPP bills exist
+                if (st.thnMasuk === '2026' || st.kelas === 'Kelas VII') {
+                    // Seragam
                     const b2 = `BILL-POS2-${st.nis}`;
-                    if (!existingBillIds.has(b2)) {
+                    if (!state.bills.some(b => b.nis === st.nis && (b.id === b2 || b.posId === 'POS2'))) {
                         state.bills.push({
                             id: b2,
                             nis: st.nis,
@@ -1827,11 +1861,10 @@ function respondOutput(obj, callback) {
                             dibayar: 0,
                             status: 'Belum Lunas'
                         });
-                        existingBillIds.add(b2);
                     }
-
+                    // Gedung
                     const b3 = `BILL-POS3-${st.nis}`;
-                    if (!existingBillIds.has(b3)) {
+                    if (!state.bills.some(b => b.nis === st.nis && (b.id === b3 || b.posId === 'POS3'))) {
                         state.bills.push({
                             id: b3,
                             nis: st.nis,
@@ -1842,11 +1875,10 @@ function respondOutput(obj, callback) {
                             dibayar: 0,
                             status: 'Belum Lunas'
                         });
-                        existingBillIds.add(b3);
                     }
-
+                    // LKS
                     const b4 = `BILL-POS4-${st.nis}`;
-                    if (!existingBillIds.has(b4)) {
+                    if (!state.bills.some(b => b.nis === st.nis && (b.id === b4 || b.posId === 'POS4'))) {
                         state.bills.push({
                             id: b4,
                             nis: st.nis,
@@ -1857,39 +1889,11 @@ function respondOutput(obj, callback) {
                             dibayar: 0,
                             status: 'Belum Lunas'
                         });
-                        existingBillIds.add(b4);
                     }
                 } else {
-                    // 27 Siswa angkatan 2025 (Kelas VIII & IX)
-                    months.forEach((m, idx) => {
-                        const bid = `BILL-SPP-${st.nis}-${idx}`;
-                        if (!existingBillIds.has(bid)) {
-                            let dibayar = 0;
-                            let status = 'Belum Lunas';
-                            if (st.nis === '20252001' && (idx === 0 || idx === 1)) {
-                                dibayar = 300000;
-                                status = 'Lunas';
-                            } else if (st.nis === '20252008' && idx === 0) {
-                                dibayar = 300000;
-                                status = 'Lunas';
-                            }
-                            state.bills.push({
-                                id: bid,
-                                nis: st.nis,
-                                posId: 'POS1',
-                                namaPos: `SPP ${m}`,
-                                kategori: 'Bulanan',
-                                nominal: 300000,
-                                dibayar: dibayar,
-                                status: status
-                            });
-                            existingBillIds.add(bid);
-                        }
-                    });
-
                     // Seragam Tahunan
                     const bSeragam = `BILL-SERAGAM-${st.nis}`;
-                    if (!existingBillIds.has(bSeragam)) {
+                    if (!state.bills.some(b => b.nis === st.nis && (b.id === bSeragam || b.posId === 'POS2'))) {
                         state.bills.push({
                             id: bSeragam,
                             nis: st.nis,
@@ -1900,12 +1904,10 @@ function respondOutput(obj, callback) {
                             dibayar: 1200000,
                             status: 'Lunas'
                         });
-                        existingBillIds.add(bSeragam);
                     }
-
                     // Uang Gedung Bebas
                     const bGedung = `BILL-GEDUNG-${st.nis}`;
-                    if (!existingBillIds.has(bGedung)) {
+                    if (!state.bills.some(b => b.nis === st.nis && (b.id === bGedung || b.posId === 'POS3'))) {
                         state.bills.push({
                             id: bGedung,
                             nis: st.nis,
@@ -1916,7 +1918,6 @@ function respondOutput(obj, callback) {
                             dibayar: 1500000,
                             status: 'Belum Lunas'
                         });
-                        existingBillIds.add(bGedung);
                     }
                 }
             });
@@ -2196,17 +2197,39 @@ function respondOutput(obj, callback) {
             // Render SPP Months Grid
             const monthsGrid = document.getElementById('spp-months-grid');
             const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            const posBulanan = (state.jenisPembayaran || []).find(p => p.kategori === 'Bulanan') || { id: 'POS1', nama: 'SPP Bulanan', nominal: 300000 };
             
             monthsGrid.innerHTML = months.map((m, idx) => {
-                const bill = stBills.find(b => b.namaPos === `SPP ${m}`);
-                const isPaid = bill && bill.status === 'Lunas';
+                const bill = stBills.find(b => (
+                    b.id === `BILL-SPP-${st.nis}-${idx}` || 
+                    b.namaPos === `SPP ${m}` || 
+                    b.namaPos === `SPP Bulanan (${m})` ||
+                    (b.kategori === 'Bulanan' && b.namaPos.toLowerCase().includes(m.toLowerCase()))
+                ));
+                const isPaid = bill && (bill.status === 'Lunas' || bill.dibayar >= bill.nominal);
+                const nominalTampil = bill ? bill.nominal : (posBulanan.nominal || 300000);
+
                 return `
-                    <div class="p-3 rounded-xl border text-center transition ${isPaid ? 'bg-emerald-50 border-emerald-300 dark:bg-emerald-950/30' : 'bg-slate-50 border-slate-200 dark:bg-slate-700/50 hover:border-brand-400 cursor-pointer'}"
-                         onclick="${isPaid ? '' : `openModalBayar('${bill ? bill.id : ''}', '${st.nis}')`}">
-                        <span class="text-xs font-bold block ${isPaid ? 'text-emerald-800 dark:text-emerald-300' : 'text-slate-700 dark:text-slate-200'}">${m}</span>
-                        <span class="text-[11px] block mt-1 font-semibold ${isPaid ? 'text-emerald-600' : 'text-rose-500'}">
-                            ${isPaid ? '✔ LUNAS' : '✖ Rp 300.000'}
+                    <div class="p-3 rounded-xl border text-center transition select-none ${
+                        isPaid 
+                            ? 'bg-emerald-50 border-emerald-300 dark:bg-emerald-950/30 hover:border-emerald-500 cursor-pointer shadow-sm' 
+                            : 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/60 hover:border-brand-500 hover:shadow-md cursor-pointer'
+                    }"
+                         onclick="openModalBayarSPP('${st.nis}', '${m}', ${idx})"
+                         title="Klik untuk ${isPaid ? 'lihat kwitansi' : 'bayar SPP ' + m}">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-bold ${isPaid ? 'text-emerald-800 dark:text-emerald-300' : 'text-slate-800 dark:text-slate-200'}">${m}</span>
+                            <i class="fa-solid ${isPaid ? 'fa-circle-check text-emerald-500' : 'fa-circle-xmark text-rose-400'} text-xs"></i>
+                        </div>
+                        <span class="text-[11px] block mt-0.5 font-bold ${isPaid ? 'text-emerald-600' : 'text-rose-600 dark:text-rose-400'}">
+                            ${isPaid ? '✔ LUNAS' : 'Rp ' + nominalTampil.toLocaleString('id-ID')}
                         </span>
+                        <div class="mt-2">
+                            ${isPaid 
+                                ? `<span class="inline-block px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200 text-[10px] font-semibold rounded">Lunas</span>` 
+                                : `<button type="button" class="w-full py-1 bg-brand-600 hover:bg-brand-700 text-white rounded text-[11px] font-bold shadow-sm transition">Bayar</button>`
+                            }
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -2257,6 +2280,59 @@ function respondOutput(obj, callback) {
         }
 
         /* MODAL BAYAR LOGIC */
+        function openModalBayarSPP(nis, monthName, monthIndex) {
+            const st = state.students.find(s => s.nis === nis);
+            if (!st) return;
+
+            const posBulanan = (state.jenisPembayaran || []).find(p => p.kategori === 'Bulanan') || { id: 'POS1', nama: 'SPP Bulanan', nominal: 300000 };
+            const billId = `BILL-SPP-${st.nis}-${monthIndex}`;
+            const billNama = `SPP ${monthName}`;
+
+            let bill = state.bills.find(b => b.nis === nis && (
+                b.id === billId || 
+                b.namaPos === billNama || 
+                b.namaPos === `SPP Bulanan (${monthName})` ||
+                (b.kategori === 'Bulanan' && b.namaPos.toLowerCase().includes(monthName.toLowerCase()))
+            ));
+
+            if (!bill) {
+                bill = {
+                    id: billId,
+                    nis: st.nis,
+                    posId: posBulanan.id || 'POS1',
+                    namaPos: billNama,
+                    kategori: 'Bulanan',
+                    nominal: posBulanan.nominal || 300000,
+                    dibayar: 0,
+                    status: 'Belum Lunas'
+                };
+                state.bills.push(bill);
+                saveState();
+            }
+
+            if (bill.status === 'Lunas' || bill.dibayar >= bill.nominal) {
+                const paidTrx = (state.transactions || []).find(t => t.nis === nis && (
+                    t.posNama === bill.namaPos || 
+                    (t.posNama && t.posNama.toLowerCase().includes(monthName.toLowerCase()))
+                ));
+                Swal.fire({
+                    title: `SPP ${monthName} Lunas`,
+                    html: `<p class="text-sm text-slate-600">Tagihan SPP bulan <b>${monthName}</b> untuk siswa <b>${st.nama}</b> sudah lunas (Rp ${bill.nominal.toLocaleString('id-ID')}).</p>`,
+                    icon: 'success',
+                    showCancelButton: !!paidTrx,
+                    confirmButtonText: paidTrx ? 'Lihat / Cetak Kwitansi' : 'OK',
+                    cancelButtonText: 'Tutup'
+                }).then((res) => {
+                    if (res.isConfirmed && paidTrx) {
+                        showKwitansiModal(paidTrx, st);
+                    }
+                });
+                return;
+            }
+
+            openModalBayar(bill.id, st.nis);
+        }
+
         function openModalBayar(billId, nis) {
             const bill = state.bills.find(b => b.id === billId);
             const st = state.students.find(s => s.nis === nis);
@@ -2301,6 +2377,7 @@ function respondOutput(obj, callback) {
 
             // Create Kwitansi Transaction
             const kwtNo = `KWT-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${String(state.transactions.length + 1).padStart(4,'0')}`;
+            const bendaharaName = (state.schoolInfo && state.schoolInfo.bendahara) ? state.schoolInfo.bendahara : 'Ust. Yuli';
             const newTrx = {
                 kwitansiNo: kwtNo,
                 tanggal: new Date().toISOString().slice(0,10),
@@ -2311,7 +2388,7 @@ function respondOutput(obj, callback) {
                 nominal: nominalPay,
                 metode: metode,
                 keterangan: ket,
-                petugas: document.getElementById('user-display-name') ? document.getElementById('user-display-name').innerText : 'Kasir Sekolah'
+                petugas: bendaharaName
             };
 
             state.transactions.unshift(newTrx);
@@ -3081,7 +3158,6 @@ function respondOutput(obj, callback) {
                             <p style="margin:0;font-size:12px;color:#475569;">Binangun, ${tanggalIndo}</p>
                             <p style="margin:4px 0 55px 0;font-size:12px;color:#475569;">Bendahara Sekolah,</p>
                             <p style="margin:0;font-weight:bold;font-size:13px;color:#0f172a;text-decoration:underline;">${bendahara}</p>
-                            <span style="font-size:10px;color:#64748b;display:block;">Kasir: ${trx.petugas}</span>
                         </div>
                     </div>
 
@@ -3109,7 +3185,11 @@ function respondOutput(obj, callback) {
             if(document.getElementById('kwt-terbilang')) {
                 document.getElementById('kwt-terbilang').innerText = `# ${terbilangRupiah(trx.nominal)} Rupiah #`;
             }
-            document.getElementById('kwt-petugas').innerText = state.schoolInfo.bendahara || trx.petugas;
+            const bendaharaName = (state.schoolInfo && state.schoolInfo.bendahara) ? state.schoolInfo.bendahara : 'Ust. Yuli';
+            document.getElementById('kwt-petugas').innerText = bendaharaName;
+            if(document.getElementById('kwt-petugas-title')) {
+                document.getElementById('kwt-petugas-title').innerText = 'Bendahara Sekolah,';
+            }
             document.getElementById('kwt-city-date').innerText = `Binangun, ${formatTanggalIndo(trx.tanggal)}`;
             if(document.getElementById('kwt-school-alamat')) {
                 document.getElementById('kwt-school-alamat').innerText = `${state.schoolInfo.alamat || ''} | Telp: ${state.schoolInfo.telepon || ''}`;
@@ -3289,16 +3369,32 @@ function respondOutput(obj, callback) {
                     state.students.push(newS);
 
                     state.jenisPembayaran.forEach(pos => {
-                        state.bills.push({
-                            id: 'BILL-' + pos.id + '-' + newS.nis,
-                            nis: newS.nis,
-                            posId: pos.id,
-                            namaPos: pos.nama,
-                            kategori: pos.kategori,
-                            nominal: pos.nominal,
-                            dibayar: 0,
-                            status: 'Belum Lunas'
-                        });
+                        if (pos.kategori === 'Bulanan') {
+                            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                            months.forEach((m, idx) => {
+                                state.bills.push({
+                                    id: `BILL-SPP-${newS.nis}-${idx}`,
+                                    nis: newS.nis,
+                                    posId: pos.id,
+                                    namaPos: `SPP ${m}`,
+                                    kategori: 'Bulanan',
+                                    nominal: pos.nominal,
+                                    dibayar: 0,
+                                    status: 'Belum Lunas'
+                                });
+                            });
+                        } else {
+                            state.bills.push({
+                                id: 'BILL-' + pos.id + '-' + newS.nis,
+                                nis: newS.nis,
+                                posId: pos.id,
+                                namaPos: pos.nama,
+                                kategori: pos.kategori,
+                                nominal: pos.nominal,
+                                dibayar: 0,
+                                status: 'Belum Lunas'
+                            });
+                        }
                     });
 
                     document.getElementById('filter-master-siswa-search').value = '';
@@ -3598,7 +3694,11 @@ function respondOutput(obj, callback) {
                                     <i class="fa-solid fa-pen-to-square"></i>
                                     <span>Edit</span>
                                 </button>
-                                <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full ml-1"></span>
+                                <button onclick="deleteJenisPembayaran('${p.id}')" class="px-2 py-1 bg-rose-100 hover:bg-rose-200 dark:bg-rose-900/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 font-bold text-[11px] rounded flex items-center space-x-1 transition" title="Hapus Pos Pembayaran">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                    <span>Hapus</span>
+                                </button>
+                                <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full ml-1" title="Status Aktif"></span>
                             </div>
                         </div>
                         <h3 class="font-bold text-base text-slate-800 dark:text-slate-100 mt-2">${p.nama}</h3>
@@ -3615,6 +3715,59 @@ function respondOutput(obj, callback) {
                     </div>
                 </div>
             `).join('');
+        }
+
+        function deleteJenisPembayaran(id) {
+            const pos = state.jenisPembayaran.find(p => p.id === id);
+            if (!pos) return;
+
+            const relatedTrxCount = (state.transactions || []).filter(t => t.posId === id || t.posNama === pos.nama).length;
+            const relatedPaidBillsCount = (state.bills || []).filter(b => b.posId === id && b.dibayar > 0).length;
+
+            let warningHtml = `<p class="text-sm text-slate-700 dark:text-slate-200">Apakah Anda yakin ingin menghapus pos pembayaran <b>"${pos.nama}"</b>?</p>`;
+            if (relatedTrxCount > 0 || relatedPaidBillsCount > 0) {
+                warningHtml += `
+                    <div class="mt-3 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg text-left text-xs text-amber-800 dark:text-amber-300">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                        <b>Catatan:</b> Pos ini memiliki <b>${relatedTrxCount}</b> riwayat transaksi dan <b>${relatedPaidBillsCount}</b> pembayaran yang telah tercatat.
+                        Riwayat kwitansi Anda akan tetap tersimpan aman sebagai arsip, namun sisa tagihan siswa yang belum dibayar untuk pos ini akan dibersihkan.
+                    </div>
+                `;
+            } else {
+                warningHtml += `<p class="text-xs text-slate-500 mt-2">Semua tagihan siswa yang belum dibayar untuk pos ini akan otomatis dihapus.</p>`;
+            }
+
+            Swal.fire({
+                title: 'Hapus Pos Pembayaran?',
+                html: warningHtml,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e11d48',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Hapus Pos',
+                cancelButtonText: 'Batal'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    const posNama = pos.nama;
+                    state.jenisPembayaran = state.jenisPembayaran.filter(p => p.id !== id);
+                    state.bills = (state.bills || []).filter(b => !(b.posId === id && b.dibayar === 0));
+
+                    if (!state.logs) state.logs = [];
+                    state.logs.unshift({
+                        waktu: new Date().toLocaleString('id-ID'),
+                        user: (document.getElementById('user-display-name') ? document.getElementById('user-display-name').innerText : 'Admin'),
+                        role: state.activeRole,
+                        aksi: 'HAPUS POS',
+                        detail: `Menghapus pos pembayaran: ${posNama} (${pos.kategori})`,
+                        device: 'Web App'
+                    });
+
+                    saveState();
+                    renderJenisPembayaran();
+                    renderDashboard();
+                    Swal.fire('Terhapus', `Pos pembayaran "${posNama}" berhasil dihapus.`, 'success');
+                }
+            });
         }
 
         function openModalEditPos(id) {
@@ -3755,16 +3908,32 @@ function respondOutput(obj, callback) {
                         : state.students.filter(st => st.kelas === res.value.targetKelas);
 
                     targetStudents.forEach(st => {
-                        state.bills.push({
-                            id: `BILL-${newId}-${st.nis}`,
-                            nis: st.nis,
-                            posId: newId,
-                            namaPos: res.value.nama,
-                            kategori: res.value.kat,
-                            nominal: res.value.nominal,
-                            dibayar: 0,
-                            status: 'Belum Lunas'
-                        });
+                        if (res.value.kat === 'Bulanan') {
+                            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                            months.forEach((m, idx) => {
+                                state.bills.push({
+                                    id: `BILL-${newId}-${st.nis}-${idx}`,
+                                    nis: st.nis,
+                                    posId: newId,
+                                    namaPos: `${res.value.nama} (${m})`,
+                                    kategori: 'Bulanan',
+                                    nominal: res.value.nominal,
+                                    dibayar: 0,
+                                    status: 'Belum Lunas'
+                                });
+                            });
+                        } else {
+                            state.bills.push({
+                                id: `BILL-${newId}-${st.nis}`,
+                                nis: st.nis,
+                                posId: newId,
+                                namaPos: res.value.nama,
+                                kategori: res.value.kat,
+                                nominal: res.value.nominal,
+                                dibayar: 0,
+                                status: 'Belum Lunas'
+                            });
+                        }
                     });
                     saveState();
                     renderJenisPembayaran();
@@ -4026,16 +4195,16 @@ function respondOutput(obj, callback) {
                         posNama: t.posNama,
                         metode: t.metode || 'Tunai',
                         nominal,
-                        petugas: t.petugas || 'Kasir'
+                        petugas: t.petugas || (state.schoolInfo ? state.schoolInfo.bendahara : 'Bendahara')
                     });
                 });
 
                 return {
                     type: 'harian',
-                    title: 'Laporan Rincian Transaksi Kasir & Pembayaran Harian',
+                    title: 'Laporan Rincian Transaksi Bendahara & Pembayaran Harian',
                     filterTa,
                     filterKelas: filterKelas || 'Semua Kelas',
-                    headers: ['No', 'No Kwitansi', 'Tanggal', 'NIS', 'Nama Siswa', 'Kelas', 'Pos Pembayaran', 'Metode', 'Nominal Kas Masuk', 'Kasir / Petugas'],
+                    headers: ['No', 'No Kwitansi', 'Tanggal', 'NIS', 'Nama Siswa', 'Kelas', 'Pos Pembayaran', 'Metode', 'Nominal Kas Masuk', 'Bendahara / Petugas'],
                     rows,
                     totals: { totalTransaksi: rows.length, totalNominal }
                 };
@@ -4991,7 +5160,7 @@ function respondOutput(obj, callback) {
                     <!-- INFORMASI PEMBAYARAN -->
                     <div style="background:#f8fafc;border:1px solid #e2e8f0;padding:10px 14px;border-radius:6px;margin:14px 0;font-size:11px;color:#475569;">
                         <p style="margin:0 0 4px 0;font-weight:bold;color:#0f172a;">Informasi Pembayaran:</p>
-                        <span>• Pembayaran dapat dilakukan via Kasir Keuangan Sekolah (Tunai).</span><br>
+                        <span>• Pembayaran dapat dilakukan via Bendahara Sekolah (Tunai).</span><br>
                         <span>• Atau melalui Transfer Bank resmi sekolah a.n. SMP MQ AL HUDA BINANGUN.</span><br>
                         <span>• Konfirmasi bukti transfer dapat dikirimkan ke Bendahara Sekolah.</span>
                     </div>
@@ -5046,7 +5215,7 @@ function respondOutput(obj, callback) {
                 `Pembayaran dapat dilakukan melalui transfer ke rekening resmi sekolah:\n` +
                 `• BCA: 123-456-7890 (a.n. SMP MQ AL HUDA BINANGUN)\n` +
                 `• Mandiri: 098-765-4321 (a.n. SMP MQ AL HUDA BINANGUN)\n` +
-                `Atau secara tunai di kasir keuangan sekolah.\n\n` +
+                `Atau secara tunai langsung ke Bendahara Sekolah.\n\n` +
                 `Mohon mengonfirmasi bukti transfer setelah melakukan pembayaran. Terima kasih.`;
 
             return text;
