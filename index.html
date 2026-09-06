@@ -1592,27 +1592,43 @@ function respondOutput(obj, callback) {
                 }
             }
 
-            // Sync authoritative school info & cloud URL
+            // Restore dedicated schoolInfo if saved by user
+            const persistentSchoolInfo = localStorage.getItem('paymentApp_schoolInfo');
+            if (persistentSchoolInfo) {
+                try {
+                    const parsedInfo = JSON.parse(persistentSchoolInfo);
+                    if (!state.schoolInfo) state.schoolInfo = {};
+                    state.schoolInfo = { ...state.schoolInfo, ...parsedInfo };
+                } catch(e) {
+                    console.error('Error parsing persistentSchoolInfo', e);
+                }
+            }
+
+            // Fallback defaults ONLY if empty or missing
             if (!state.schoolInfo) state.schoolInfo = {};
-            state.schoolInfo.nama = 'SMP MQ AL HUDA BINANGUN';
-            state.schoolInfo.alamat = 'Jl. Butsi RT 16 RW 06 Desa Sidayu Kec. Binangun';
-            state.schoolInfo.telepon = '(021) 7890123';
-            state.schoolInfo.bendahara = 'Ust. Yuli';
-            state.schoolInfo.scriptUrl = 'https://script.google.com/macros/s/AKfycby_HTh_tJkSEXlqtVEXC4rbvbHiRvhGKYYEuw2ZQJZ4gYnKpZ2ZgAifibLabFx7e8hp/exec';
+            if (!state.schoolInfo.nama) state.schoolInfo.nama = 'SMP MQ AL HUDA BINANGUN';
+            if (!state.schoolInfo.alamat) state.schoolInfo.alamat = 'Jl. Butsi RT 16 RW 06 Desa Sidayu Kec. Binangun';
+            if (!state.schoolInfo.telepon) state.schoolInfo.telepon = '(021) 7890123';
+            if (!state.schoolInfo.bendahara) state.schoolInfo.bendahara = 'Ust. Yuli';
+            if (!state.schoolInfo.scriptUrl) state.schoolInfo.scriptUrl = 'https://script.google.com/macros/s/AKfycby_HTh_tJkSEXlqtVEXC4rbvbHiRvhGKYYEuw2ZQJZ4gYnKpZ2ZgAifibLabFx7e8hp/exec';
 
-            // Sync activeTA & tahunAjarans
-            state.activeTA = '2026/2027';
-            state.tahunAjarans = [
-                { ta: '2025/2026', status: 'Nonaktif' },
-                { ta: '2026/2027', status: 'Aktif' }
-            ];
+            // Sync activeTA & tahunAjarans only if empty
+            if (!state.activeTA) state.activeTA = '2026/2027';
+            if (!state.tahunAjarans || state.tahunAjarans.length === 0) {
+                state.tahunAjarans = [
+                    { ta: '2025/2026', status: 'Nonaktif' },
+                    { ta: '2026/2027', status: 'Aktif' }
+                ];
+            }
 
-            // Sync standard classes
-            state.kelases = [
-                { id: '1', nama: 'Kelas VII', jurusan: '-', wali: 'Wali Kelas VII' },
-                { id: '5', nama: 'Kelas VIII', jurusan: 'Umum', wali: 'Guru Pengampu' },
-                { id: '6', nama: 'Kelas IX', jurusan: 'Umum', wali: 'Guru Pengampu' }
-            ];
+            // Sync standard classes only if empty
+            if (!state.kelases || state.kelases.length === 0) {
+                state.kelases = [
+                    { id: '1', nama: 'Kelas VII', jurusan: '-', wali: 'Wali Kelas VII' },
+                    { id: '5', nama: 'Kelas VIII', jurusan: 'Umum', wali: 'Guru Pengampu' },
+                    { id: '6', nama: 'Kelas IX', jurusan: 'Umum', wali: 'Guru Pengampu' }
+                ];
+            }
 
             // Sync students: Ensure all 34 authoritative students exist
             if (!state.students) state.students = [];
@@ -2412,9 +2428,24 @@ function respondOutput(obj, callback) {
                     // Preserve active login
                     const currentLoggedIn = state.loggedInUser;
                     const prevCount = (state.transactions || []).length;
+
+                    // Preserve and merge schoolInfo safely so user settings never evaporate
+                    const persistentSchoolInfo = localStorage.getItem('paymentApp_schoolInfo');
+                    let savedLocalSchoolInfo = state.schoolInfo || {};
+                    if (persistentSchoolInfo) {
+                        try { savedLocalSchoolInfo = { ...savedLocalSchoolInfo, ...JSON.parse(persistentSchoolInfo) }; } catch(e){}
+                    }
+                    const mergedSchoolInfo = {
+                        nama: (cloudData.schoolInfo && cloudData.schoolInfo.nama) || savedLocalSchoolInfo.nama || 'SMP MQ AL HUDA BINANGUN',
+                        alamat: (cloudData.schoolInfo && cloudData.schoolInfo.alamat) || savedLocalSchoolInfo.alamat || 'Jl. Butsi RT 16 RW 06 Desa Sidayu Kec. Binangun',
+                        telepon: (cloudData.schoolInfo && cloudData.schoolInfo.telepon) || savedLocalSchoolInfo.telepon || '(021) 7890123',
+                        bendahara: (cloudData.schoolInfo && cloudData.schoolInfo.bendahara) || savedLocalSchoolInfo.bendahara || 'Ust. Yuli',
+                        scriptUrl: (cloudData.schoolInfo && cloudData.schoolInfo.scriptUrl) || savedLocalSchoolInfo.scriptUrl || ''
+                    };
                     
                     state = {
                         ...cloudData,
+                        schoolInfo: mergedSchoolInfo,
                         transactions: mergedTrx,
                         bills: (mergedBills && mergedBills.length >= 400) ? mergedBills : (state.bills || mergedBills),
                         loggedInUser: currentLoggedIn || cloudData.loggedInUser,
@@ -2425,6 +2456,7 @@ function respondOutput(obj, callback) {
                     lastSyncTimestamp = Date.now();
 
                     if (state.loggedInUser) {
+                        renderSettings();
                         // Re-render dashboard & active tables jika ada perubahan data
                         if (prevCount !== mergedTrx.length || isManual) {
                             initializeMainUI();
@@ -4533,21 +4565,35 @@ function respondOutput(obj, callback) {
 
         function saveSettings(e) {
             e.preventDefault();
-            const nama = document.getElementById('setting-nama-sekolah').value;
-            const alamat = document.getElementById('setting-alamat').value;
-            const telp = document.getElementById('setting-telepon').value;
-            const bendahara = document.getElementById('setting-bendahara').value;
-            const scriptUrl = document.getElementById('setting-script-url') ? document.getElementById('setting-script-url').value : '';
+            const nama = document.getElementById('setting-nama-sekolah').value.trim();
+            const alamat = document.getElementById('setting-alamat').value.trim();
+            const telp = document.getElementById('setting-telepon').value.trim();
+            const bendahara = document.getElementById('setting-bendahara').value.trim();
+            const scriptUrl = document.getElementById('setting-script-url') ? document.getElementById('setting-script-url').value.trim() : '';
 
+            if (!state.schoolInfo) state.schoolInfo = {};
             state.schoolInfo.nama = nama;
             state.schoolInfo.alamat = alamat;
             state.schoolInfo.telepon = telp;
             state.schoolInfo.bendahara = bendahara;
             state.schoolInfo.scriptUrl = scriptUrl;
 
+            // Simpan ke kunci terpisah agar tidak pernah tertimpa atau menguap
+            localStorage.setItem('paymentApp_schoolInfo', JSON.stringify(state.schoolInfo));
+
             document.querySelectorAll('.school-title-display').forEach(el => el.innerText = nama);
+            renderSettings();
+
+            state.lastUpdated = Date.now();
             saveState();
-            Swal.fire('Tersimpan', 'Identitas sekolah & kuitansi berhasil diperbarui!', 'success');
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Pengaturan Tersimpan!',
+                text: 'Identitas sekolah, bendahara, dan URL Cloud berhasil disimpan secara permanen!',
+                timer: 2000,
+                showConfirmButton: false
+            });
         }
 
         function copyAppsScriptCode() {
