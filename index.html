@@ -543,7 +543,7 @@
                             <div class="flex justify-between items-center mb-4">
                                 <div>
                                     <h3 class="font-bold text-slate-800 dark:text-slate-100 text-base">Matriks Pembayaran SPP (Bulanan)</h3>
-                                    <p class="text-xs text-slate-500">Klik bulan untuk memproses pembayaran bulanan (Rp 300.000 / bln)</p>
+                                    <p class="text-xs text-slate-500" id="spp-matrix-rate-hint">Klik bulan untuk memproses pembayaran bulanan (Rp 300.000 / bln)</p>
                                 </div>
                                 <span class="text-xs font-semibold px-2.5 py-1 bg-brand-50 text-brand-600 dark:bg-slate-700 dark:text-brand-300 rounded-lg" id="spp-matrix-ta-badge">TA 2026/2027</span>
                             </div>
@@ -783,10 +783,16 @@
                         <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100">Master Jenis Pembayaran (Dinamis)</h2>
                         <p class="text-xs text-slate-500">Atur pos pembayaran SPP (Bulanan), Seragam (Tahunan), LKS (Sekali), maupun Uang Gedung (Bebas/Cicilan).</p>
                     </div>
-                    <button onclick="openModalAddPos()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow-md transition flex items-center space-x-2">
-                        <i class="fa-solid fa-plus"></i>
-                        <span>Tambah Pos Pembayaran & Generate Tagihan</span>
-                    </button>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="syncAllStudentBillsWithPOS(true)" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center space-x-1.5" title="Sinkronkan seluruh tagihan pembayaran siswa dengan pos yang aktif">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                            <span>Sinkronkan Tagihan Siswa</span>
+                        </button>
+                        <button onclick="openModalAddPos()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow-md transition flex items-center space-x-2">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Tambah Pos Pembayaran</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="jenis-pembayaran-grid">
@@ -1791,16 +1797,26 @@ function respondOutput(obj, callback) {
             updateRoleUI();
         }
 
-        // Pastikan tagihan siswa lengkap tanpa pernah menghapus tagihan yang sudah ada / sudah dibayar
-        function ensureBillsForStudents() {
+        /* ====================================================================
+         * SINKRONISASI PEMBAYARAN SISWA DENGAN MASTER JENIS PEMBAYARAN
+         * Sinkronisasi otomatis & konsisten antara Siswa dan Master POS
+         * ==================================================================== */
+        function syncAllStudentBillsWithPOS(showAlert = false) {
             if (!state.bills) state.bills = [];
+            if (!state.students) state.students = [];
+            if (!state.jenisPembayaran || state.jenisPembayaran.length === 0) {
+                state.jenisPembayaran = [
+                    { id: 'POS1', nama: 'SPP Bulanan', kategori: 'Bulanan', targetKelas: 'Semua Kelas', nominal: 300000, status: 'Aktif', ket: 'SPP rutin per bulan' },
+                    { id: 'POS2', nama: 'Uang Seragam Lengkap', kategori: 'Tahunan', targetKelas: 'Semua Kelas', nominal: 1200000, status: 'Aktif', ket: 'Seragam batik & olahraga' },
+                    { id: 'POS3', nama: 'Uang Gedung / Infaq Bangunan', kategori: 'Bebas', targetKelas: 'Semua Kelas', nominal: 3000000, status: 'Aktif', ket: 'Bisa dicicil selama 1 thn' },
+                    { id: 'POS4', nama: 'Modul LKS & Buku', kategori: 'Sekali', targetKelas: 'Semua Kelas', nominal: 450000, status: 'Aktif', ket: 'Semester Ganjil' }
+                ];
+            }
+
             const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
-            const posBulanan = (state.jenisPembayaran || []).find(p => p.kategori === 'Bulanan') || { id: 'POS1', nama: 'SPP Bulanan', nominal: 300000 };
-            const sppRate = posBulanan.nominal || 300000;
-
             state.students.forEach(st => {
-                // 1. Convert old single 'SPP Bulanan' bill (BILL-POS1-*) if present
+                // 1. Bersihkan tagihan legacy SPP yang bukan per-bulan jika masih ada
                 const oldBulananIdx = state.bills.findIndex(b => b.nis === st.nis && (b.id === `BILL-POS1-${st.nis}` || b.namaPos === 'SPP Bulanan'));
                 let oldPaidAmount = 0;
                 if (oldBulananIdx !== -1) {
@@ -1808,123 +1824,162 @@ function respondOutput(obj, callback) {
                     state.bills.splice(oldBulananIdx, 1);
                 }
 
-                // 2. Ensure all 12 monthly SPP bills exist
-                months.forEach((m, idx) => {
-                    const bid = `BILL-SPP-${st.nis}-${idx}`;
-                    let existingBill = state.bills.find(b => b.nis === st.nis && (
-                        b.id === bid || 
-                        b.namaPos === `SPP ${m}` || 
-                        b.namaPos === `SPP Bulanan (${m})` ||
-                        (b.kategori === 'Bulanan' && b.namaPos.toLowerCase().includes(m.toLowerCase()))
-                    ));
+                // 2. Sinkronkan setiap pos pembayaran aktif ke siswa ini
+                state.jenisPembayaran.forEach(pos => {
+                    const isTargetMatch = !pos.targetKelas || pos.targetKelas === 'Semua Kelas' || pos.targetKelas === st.kelas;
 
-                    if (!existingBill) {
-                        let dibayar = 0;
-                        let status = 'Belum Lunas';
-                        if (st.nis === '20252001' && (idx === 0 || idx === 1)) {
-                            dibayar = sppRate;
-                            status = 'Lunas';
-                        } else if (st.nis === '20252008' && idx === 0) {
-                            dibayar = sppRate;
-                            status = 'Lunas';
-                        } else if (oldPaidAmount > 0 && idx === 0) {
-                            dibayar = oldPaidAmount;
-                            status = dibayar >= sppRate ? 'Lunas' : 'Belum Lunas';
-                            oldPaidAmount = 0;
+                    if (pos.kategori === 'Bulanan') {
+                        if (isTargetMatch) {
+                            months.forEach((m, idx) => {
+                                const bid = `BILL-${pos.id}-${st.nis}-${idx}`;
+                                const altBid = `BILL-SPP-${st.nis}-${idx}`;
+                                let bill = state.bills.find(b => b.nis === st.nis && (
+                                    b.id === bid || 
+                                    b.id === altBid || 
+                                    b.namaPos === `SPP ${m}` || 
+                                    b.namaPos === `${pos.nama} (${m})` || 
+                                    (b.kategori === 'Bulanan' && b.namaPos.toLowerCase().includes(m.toLowerCase()))
+                                ));
+
+                                if (!bill) {
+                                    let dibayar = 0;
+                                    let status = 'Belum Lunas';
+                                    if (st.nis === '20252001' && (idx === 0 || idx === 1)) {
+                                        dibayar = pos.nominal;
+                                        status = 'Lunas';
+                                    } else if (st.nis === '20252008' && idx === 0) {
+                                        dibayar = pos.nominal;
+                                        status = 'Lunas';
+                                    } else if (oldPaidAmount > 0 && idx === 0) {
+                                        dibayar = oldPaidAmount;
+                                        status = dibayar >= pos.nominal ? 'Lunas' : 'Belum Lunas';
+                                        oldPaidAmount = 0;
+                                    }
+
+                                    state.bills.push({
+                                        id: bid,
+                                        nis: st.nis,
+                                        posId: pos.id,
+                                        namaPos: `SPP ${m}`,
+                                        kategori: 'Bulanan',
+                                        nominal: pos.nominal,
+                                        dibayar: dibayar,
+                                        status: status
+                                    });
+                                } else {
+                                    bill.posId = pos.id;
+                                    bill.kategori = 'Bulanan';
+                                    if (!bill.namaPos.toLowerCase().includes(m.toLowerCase())) {
+                                        bill.namaPos = `SPP ${m}`;
+                                    }
+                                    if (bill.dibayar === 0) {
+                                        bill.nominal = pos.nominal;
+                                    } else {
+                                        bill.nominal = Math.max(bill.dibayar, pos.nominal);
+                                        bill.status = bill.dibayar >= bill.nominal ? 'Lunas' : 'Belum Lunas';
+                                    }
+                                }
+                            });
+                        } else {
+                            // Hapus tagihan bulanan pos ini yang belum dibayar jika siswa bukan target kelasnya
+                            state.bills = state.bills.filter(b => !(b.nis === st.nis && b.posId === pos.id && b.dibayar === 0));
                         }
+                    } else {
+                        // Kategori Non-Bulanan (Tahunan, Bebas, Sekali)
+                        if (isTargetMatch) {
+                            const bid = `BILL-${pos.id}-${st.nis}`;
+                            let bill = state.bills.find(b => b.nis === st.nis && (
+                                b.id === bid || 
+                                b.posId === pos.id || 
+                                (pos.id === 'POS2' && (b.id === `BILL-SERAGAM-${st.nis}` || b.namaPos.includes('Seragam'))) ||
+                                (pos.id === 'POS3' && (b.id === `BILL-GEDUNG-${st.nis}` || b.namaPos.includes('Gedung') || b.namaPos.includes('Infaq'))) ||
+                                (pos.id === 'POS4' && (b.id === `BILL-POS4-${st.nis}` || b.namaPos.includes('LKS') || b.namaPos.includes('Buku'))) ||
+                                b.namaPos.toLowerCase() === pos.nama.toLowerCase()
+                            ));
 
-                        state.bills.push({
-                            id: bid,
-                            nis: st.nis,
-                            posId: posBulanan.id || 'POS1',
-                            namaPos: `SPP ${m}`,
-                            kategori: 'Bulanan',
-                            nominal: sppRate,
-                            dibayar: dibayar,
-                            status: status
-                        });
+                            if (!bill) {
+                                let dibayar = 0;
+                                let status = 'Belum Lunas';
+                                if (pos.id === 'POS2' && st.thnMasuk !== '2026' && st.kelas !== 'Kelas VII') {
+                                    dibayar = pos.nominal;
+                                    status = 'Lunas';
+                                } else if (pos.id === 'POS3' && st.thnMasuk !== '2026' && st.kelas !== 'Kelas VII') {
+                                    dibayar = Math.min(1500000, pos.nominal);
+                                    status = dibayar >= pos.nominal ? 'Lunas' : 'Belum Lunas';
+                                }
+
+                                state.bills.push({
+                                    id: bid,
+                                    nis: st.nis,
+                                    posId: pos.id,
+                                    namaPos: pos.nama,
+                                    kategori: pos.kategori,
+                                    nominal: pos.nominal,
+                                    dibayar: dibayar,
+                                    status: status
+                                });
+                            } else {
+                                bill.posId = pos.id;
+                                bill.namaPos = pos.nama;
+                                bill.kategori = pos.kategori;
+                                if (bill.dibayar === 0) {
+                                    bill.nominal = pos.nominal;
+                                } else {
+                                    bill.nominal = Math.max(bill.dibayar, pos.nominal);
+                                    bill.status = bill.dibayar >= bill.nominal ? 'Lunas' : 'Belum Lunas';
+                                }
+                            }
+                        } else {
+                            // Hapus tagihan non-bulanan yang belum dibayar jika siswa bukan target kelasnya
+                            state.bills = state.bills.filter(b => !(b.nis === st.nis && b.posId === pos.id && b.dibayar === 0));
+                        }
                     }
                 });
+            });
 
-                // 3. Ensure Non-SPP bills exist
-                if (st.thnMasuk === '2026' || st.kelas === 'Kelas VII') {
-                    // Seragam
-                    const b2 = `BILL-POS2-${st.nis}`;
-                    if (!state.bills.some(b => b.nis === st.nis && (b.id === b2 || b.posId === 'POS2'))) {
-                        state.bills.push({
-                            id: b2,
-                            nis: st.nis,
-                            posId: 'POS2',
-                            namaPos: 'Uang Seragam Lengkap',
-                            kategori: 'Tahunan',
-                            nominal: 1200000,
-                            dibayar: 0,
-                            status: 'Belum Lunas'
-                        });
-                    }
-                    // Gedung
-                    const b3 = `BILL-POS3-${st.nis}`;
-                    if (!state.bills.some(b => b.nis === st.nis && (b.id === b3 || b.posId === 'POS3'))) {
-                        state.bills.push({
-                            id: b3,
-                            nis: st.nis,
-                            posId: 'POS3',
-                            namaPos: 'Uang Gedung / Infaq Bangunan',
-                            kategori: 'Bebas',
-                            nominal: 3000000,
-                            dibayar: 0,
-                            status: 'Belum Lunas'
-                        });
-                    }
-                    // LKS
-                    const b4 = `BILL-POS4-${st.nis}`;
-                    if (!state.bills.some(b => b.nis === st.nis && (b.id === b4 || b.posId === 'POS4'))) {
-                        state.bills.push({
-                            id: b4,
-                            nis: st.nis,
-                            posId: 'POS4',
-                            namaPos: 'Modul LKS & Buku',
-                            kategori: 'Sekali',
-                            nominal: 450000,
-                            dibayar: 0,
-                            status: 'Belum Lunas'
-                        });
-                    }
+            // 3. Bersihkan tagihan dari POS yang sudah tidak ada lagi di Master Jenis Pembayaran (unpaid)
+            const activePosIds = new Set(state.jenisPembayaran.map(p => p.id));
+            state.bills = state.bills.filter(b => activePosIds.has(b.posId) || b.dibayar > 0);
+
+            // 4. Pastikan tidak ada tagihan ganda untuk siswa dan namaPos yang sama
+            const uniqueBillsMap = new Map();
+            state.bills.forEach(b => {
+                const key = `${b.nis}_${b.posId}_${b.namaPos}`;
+                if (uniqueBillsMap.has(key)) {
+                    const existing = uniqueBillsMap.get(key);
+                    existing.dibayar = Math.max(existing.dibayar, b.dibayar);
+                    existing.nominal = Math.max(existing.nominal, b.nominal);
+                    existing.status = existing.dibayar >= existing.nominal ? 'Lunas' : 'Belum Lunas';
                 } else {
-                    // Seragam Tahunan
-                    const bSeragam = `BILL-SERAGAM-${st.nis}`;
-                    if (!state.bills.some(b => b.nis === st.nis && (b.id === bSeragam || b.posId === 'POS2'))) {
-                        state.bills.push({
-                            id: bSeragam,
-                            nis: st.nis,
-                            posId: 'POS2',
-                            namaPos: 'Uang Seragam Lengkap',
-                            kategori: 'Tahunan',
-                            nominal: 1200000,
-                            dibayar: 1200000,
-                            status: 'Lunas'
-                        });
-                    }
-                    // Uang Gedung Bebas
-                    const bGedung = `BILL-GEDUNG-${st.nis}`;
-                    if (!state.bills.some(b => b.nis === st.nis && (b.id === bGedung || b.posId === 'POS3'))) {
-                        state.bills.push({
-                            id: bGedung,
-                            nis: st.nis,
-                            posId: 'POS3',
-                            namaPos: 'Uang Gedung / Infaq Bangunan',
-                            kategori: 'Bebas',
-                            nominal: 3000000,
-                            dibayar: 1500000,
-                            status: 'Belum Lunas'
-                        });
-                    }
+                    uniqueBillsMap.set(key, b);
                 }
             });
+            state.bills = Array.from(uniqueBillsMap.values());
+
+            saveState();
+
+            if (showAlert) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Sinkronisasi Tagihan Berhasil!',
+                    html: `
+                        <div class="text-left text-xs space-y-2 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600">
+                            <p class="flex items-center"><i class="fa-solid fa-circle-check text-emerald-500 mr-2"></i> <b>${state.students.length} Siswa</b> telah disinkronkan.</p>
+                            <p class="flex items-center"><i class="fa-solid fa-circle-check text-emerald-500 mr-2"></i> <b>${state.jenisPembayaran.length} Master Pos Pembayaran</b> aktif diterapkan.</p>
+                            <p class="flex items-center"><i class="fa-solid fa-chart-pie text-brand-500 mr-2"></i> Total Tagihan Terkelola: <b>${state.bills.length} item</b> tagihan.</p>
+                        </div>
+                    `,
+                    confirmButtonColor: '#0284c7'
+                });
+            }
+        }
+
+        function ensureBillsForStudents() {
+            syncAllStudentBillsWithPOS(false);
         }
 
         function initGeneratedBills() {
-            ensureBillsForStudents();
+            syncAllStudentBillsWithPOS(false);
         }
 
         /* NAVIGATION & ROLE CONTROLLER */
@@ -2177,6 +2232,9 @@ function respondOutput(obj, callback) {
             const st = state.students.find(s => s.nis === nis);
             if(!st) return;
 
+            // Sinkronkan tagihan siswa dengan master jenis pembayaran aktif
+            syncAllStudentBillsWithPOS(false);
+
             showView('transaksi');
             document.getElementById('student-search-results').classList.add('hidden');
             const container = document.getElementById('transaksi-active-student-container');
@@ -2199,9 +2257,15 @@ function respondOutput(obj, callback) {
             const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
             const posBulanan = (state.jenisPembayaran || []).find(p => p.kategori === 'Bulanan') || { id: 'POS1', nama: 'SPP Bulanan', nominal: 300000 };
             
+            const sppHint = document.getElementById('spp-matrix-rate-hint');
+            if (sppHint) {
+                sppHint.innerText = `Klik bulan untuk memproses pembayaran bulanan (Rp ${(posBulanan.nominal || 300000).toLocaleString('id-ID')} / bln)`;
+            }
+            
             monthsGrid.innerHTML = months.map((m, idx) => {
                 const bill = stBills.find(b => (
                     b.id === `BILL-SPP-${st.nis}-${idx}` || 
+                    b.id === `BILL-${posBulanan.id}-${st.nis}-${idx}` || 
                     b.namaPos === `SPP ${m}` || 
                     b.namaPos === `SPP Bulanan (${m})` ||
                     (b.kategori === 'Bulanan' && b.namaPos.toLowerCase().includes(m.toLowerCase()))
@@ -2290,6 +2354,7 @@ function respondOutput(obj, callback) {
 
             let bill = state.bills.find(b => b.nis === nis && (
                 b.id === billId || 
+                b.id === `BILL-${posBulanan.id}-${st.nis}-${monthIndex}` || 
                 b.namaPos === billNama || 
                 b.namaPos === `SPP Bulanan (${monthName})` ||
                 (b.kategori === 'Bulanan' && b.namaPos.toLowerCase().includes(monthName.toLowerCase()))
@@ -2653,6 +2718,9 @@ function respondOutput(obj, callback) {
                         loggedInUser: currentLoggedIn || cloudData.loggedInUser,
                         lastUpdated: Math.max(cloudData.lastUpdated || 0, state.lastUpdated || 0, Date.now())
                     };
+
+                    // Sinkronkan tagihan siswa dengan master pos yang baru diterima dari cloud
+                    syncAllStudentBillsWithPOS(false);
 
                     // Save safely to multi-tier localStorage
                     try {
@@ -3294,6 +3362,7 @@ function respondOutput(obj, callback) {
                     st.gender = res.value.gender;
                     st.kelas = res.value.kelas;
                     st.hp = res.value.hp;
+                    syncAllStudentBillsWithPOS(false);
                     saveState();
                     renderMasterSiswaTable();
                     renderDashboard();
@@ -3368,34 +3437,8 @@ function respondOutput(obj, callback) {
                     };
                     state.students.push(newS);
 
-                    state.jenisPembayaran.forEach(pos => {
-                        if (pos.kategori === 'Bulanan') {
-                            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-                            months.forEach((m, idx) => {
-                                state.bills.push({
-                                    id: `BILL-SPP-${newS.nis}-${idx}`,
-                                    nis: newS.nis,
-                                    posId: pos.id,
-                                    namaPos: `SPP ${m}`,
-                                    kategori: 'Bulanan',
-                                    nominal: pos.nominal,
-                                    dibayar: 0,
-                                    status: 'Belum Lunas'
-                                });
-                            });
-                        } else {
-                            state.bills.push({
-                                id: 'BILL-' + pos.id + '-' + newS.nis,
-                                nis: newS.nis,
-                                posId: pos.id,
-                                namaPos: pos.nama,
-                                kategori: pos.kategori,
-                                nominal: pos.nominal,
-                                dibayar: 0,
-                                status: 'Belum Lunas'
-                            });
-                        }
-                    });
+                    // Sinkronkan tagihan siswa baru dengan seluruh pos pembayaran aktif
+                    syncAllStudentBillsWithPOS(false);
 
                     document.getElementById('filter-master-siswa-search').value = '';
                     document.getElementById('filter-master-siswa-kelas').value = '';
@@ -3750,7 +3793,9 @@ function respondOutput(obj, callback) {
                 if (res.isConfirmed) {
                     const posNama = pos.nama;
                     state.jenisPembayaran = state.jenisPembayaran.filter(p => p.id !== id);
-                    state.bills = (state.bills || []).filter(b => !(b.posId === id && b.dibayar === 0));
+                    
+                    // Sinkronkan seluruh tagihan siswa secara otomatis setelah pos dihapus
+                    syncAllStudentBillsWithPOS(false);
 
                     if (!state.logs) state.logs = [];
                     state.logs.unshift({
@@ -3762,10 +3807,9 @@ function respondOutput(obj, callback) {
                         device: 'Web App'
                     });
 
-                    saveState();
                     renderJenisPembayaran();
                     renderDashboard();
-                    Swal.fire('Terhapus', `Pos pembayaran "${posNama}" berhasil dihapus.`, 'success');
+                    Swal.fire('Terhapus', `Pos pembayaran "${posNama}" berhasil dihapus dan tagihan siswa telah disinkronkan.`, 'success');
                 }
             });
         }
@@ -3792,6 +3836,15 @@ function respondOutput(obj, callback) {
                             </select>
                         </div>
                         <div>
+                            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Target Kelas Siswa</label>
+                            <select id="swal-edit-pos-kelas" class="swal2-input !m-0 !w-full">
+                                <option value="Semua Kelas" ${(pos.targetKelas||'Semua Kelas')==='Semua Kelas'?'selected':''}>Semua Kelas (Kelas VII, VIII, IX)</option>
+                                <option value="Kelas VII" ${pos.targetKelas==='Kelas VII'?'selected':''}>Khusus Kelas VII</option>
+                                <option value="Kelas VIII" ${pos.targetKelas==='Kelas VIII'?'selected':''}>Khusus Kelas VIII</option>
+                                <option value="Kelas IX" ${pos.targetKelas==='Kelas IX'?'selected':''}>Khusus Kelas IX</option>
+                            </select>
+                        </div>
+                        <div>
                             <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Nominal (Rp)</label>
                             <input id="swal-edit-pos-nominal" type="number" class="swal2-input !m-0 !w-full" placeholder="Nominal Rp" value="${pos.nominal}" required>
                         </div>
@@ -3806,39 +3859,29 @@ function respondOutput(obj, callback) {
                 preConfirm: () => {
                     const nama = document.getElementById('swal-edit-pos-nama').value.trim();
                     const kat = document.getElementById('swal-edit-pos-kat').value;
+                    const targetKelas = document.getElementById('swal-edit-pos-kelas').value;
                     const nominal = parseInt(document.getElementById('swal-edit-pos-nominal').value) || 0;
                     const ket = document.getElementById('swal-edit-pos-ket').value.trim();
                     if(!nama || nominal <= 0) {
                         Swal.showValidationMessage('Nama pos dan nominal wajib diisi dengan benar');
                         return false;
                     }
-                    return { nama, kat, nominal, ket };
+                    return { nama, kat, targetKelas, nominal, ket };
                 }
             }).then((res) => {
                 if(res.isConfirmed && res.value) {
                     pos.nama = res.value.nama;
                     pos.kategori = res.value.kat;
+                    pos.targetKelas = res.value.targetKelas;
                     pos.nominal = res.value.nominal;
-                    pos.ket = res.value.ket;
+                    pos.ket = res.value.ket || `Target: ${res.value.targetKelas}`;
 
-                    // Update existing bills that belong to this pos
-                    state.bills.forEach(b => {
-                        if(b.posId === id) {
-                            b.namaPos = res.value.nama;
-                            b.kategori = res.value.kat;
-                            if(b.dibayar === 0) {
-                                b.nominal = res.value.nominal;
-                            } else {
-                                b.nominal = Math.max(b.dibayar, res.value.nominal);
-                                b.status = b.dibayar >= b.nominal ? 'Lunas' : 'Belum Lunas';
-                            }
-                        }
-                    });
+                    // Sinkronkan seluruh tagihan siswa secara otomatis
+                    syncAllStudentBillsWithPOS(false);
 
-                    saveState();
                     renderJenisPembayaran();
                     renderDashboard();
-                    Swal.fire('Tersimpan', 'Pos pembayaran dan tagihan siswa berhasil diperbarui!', 'success');
+                    Swal.fire('Tersimpan', 'Pos pembayaran dan tagihan siswa berhasil diperbarui dan disinkronkan!', 'success');
                 }
             });
         }
@@ -3891,7 +3934,9 @@ function respondOutput(obj, callback) {
                 }
             }).then((res) => {
                 if(res.isConfirmed && res.value.nama) {
-                    const newId = `POS${state.jenisPembayaran.length + 1}`;
+                    const existingNumericIds = state.jenisPembayaran.map(p => parseInt(String(p.id).replace(/\D/g, '')) || 0);
+                    const nextNum = Math.max(0, ...existingNumericIds) + 1;
+                    const newId = `POS${nextNum}`;
                     state.jenisPembayaran.push({
                         id: newId,
                         nama: res.value.nama,
@@ -3902,43 +3947,12 @@ function respondOutput(obj, callback) {
                         ket: `Target: ${res.value.targetKelas}`
                     });
 
-                    // Auto-generate bills for target students
-                    const targetStudents = res.value.targetKelas === 'Semua Kelas' 
-                        ? state.students 
-                        : state.students.filter(st => st.kelas === res.value.targetKelas);
+                    // Sinkronkan seluruh tagihan siswa secara otomatis
+                    syncAllStudentBillsWithPOS(false);
 
-                    targetStudents.forEach(st => {
-                        if (res.value.kat === 'Bulanan') {
-                            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-                            months.forEach((m, idx) => {
-                                state.bills.push({
-                                    id: `BILL-${newId}-${st.nis}-${idx}`,
-                                    nis: st.nis,
-                                    posId: newId,
-                                    namaPos: `${res.value.nama} (${m})`,
-                                    kategori: 'Bulanan',
-                                    nominal: res.value.nominal,
-                                    dibayar: 0,
-                                    status: 'Belum Lunas'
-                                });
-                            });
-                        } else {
-                            state.bills.push({
-                                id: `BILL-${newId}-${st.nis}`,
-                                nis: st.nis,
-                                posId: newId,
-                                namaPos: res.value.nama,
-                                kategori: res.value.kat,
-                                nominal: res.value.nominal,
-                                dibayar: 0,
-                                status: 'Belum Lunas'
-                            });
-                        }
-                    });
-                    saveState();
                     renderJenisPembayaran();
                     renderDashboard();
-                    Swal.fire('Berhasil', `Pos pembayaran berhasil dibuat dan tagihan di-generate untuk ${targetStudents.length} siswa (${res.value.targetKelas})!`, 'success');
+                    Swal.fire('Berhasil', `Pos pembayaran "${res.value.nama}" berhasil dibuat dan tagihan seluruh siswa target (${res.value.targetKelas}) telah disinkronkan!`, 'success');
                 }
             });
         }
