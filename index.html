@@ -945,6 +945,23 @@
                             </label>
                         </div>
                     </div>
+
+                    <!-- CARD RESET TOTAL DATABASE (BERSIH DARI AWAL) -->
+                    <div class="mt-8 pt-6 border-t border-rose-200 dark:border-rose-900/50">
+                        <div class="p-5 bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 rounded-2xl">
+                            <div class="flex items-center space-x-2 text-rose-700 dark:text-rose-400 mb-2">
+                                <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                                <h3 class="text-base font-bold">Reset Total Database (Mulai Bersih dari Awal)</h3>
+                            </div>
+                            <p class="text-xs text-rose-600 dark:text-rose-300 mb-4 leading-relaxed">
+                                Hapus seluruh data siswa dummy, transaksi pembayaran, tagihan, dan pos pembayaran agar sistem kembali kosong dan bersih 100% dari awal untuk diisi secara manual. Akun login Super Administrator & identitas sekolah tetap aman tersimpan.
+                            </p>
+                            <button type="button" onclick="confirmResetAllData()" class="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow flex items-center space-x-2 transition active:scale-95">
+                                <i class="fa-solid fa-trash-can"></i>
+                                <span>Kosongkan & Reset Semua Data Sekarang</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1460,89 +1477,13 @@ function respondOutput(obj, callback) {
         /* ====================================================================
          * CLIENT STATE STORE & INITIAL MOCK DATABASE
          * ==================================================================== */
-        const INITIAL_STUDENTS = [
-            { nis: '20252001', password: '123456', nisn: '0115788130', nama: 'AHMAD FAQIH MURTADLO', gender: 'L', kelas: 'Kelas IX', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252002', password: '123456', nisn: '0125554338', nama: 'AHMAD HAMZAH', gender: 'L', kelas: 'Kelas VIII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252003', password: '123456', nisn: '0127685493', nama: 'ALFIZ AIUNURROFFIQ', gender: 'L', kelas: 'Kelas VIII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252004', password: '123456', nisn: '0136433091', nama: 'AMALIA KAYLATUL KHASANAH', gender: 'P', kelas: 'Kelas VIII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252005', password: '123456', nisn: '0109109921', nama: 'ARSYAD MUZAQI SANING', gender: 'L', kelas: 'Kelas IX', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252006', password: '123456', nisn: '0104232591', nama: 'AZRIL RIZKO VIRNANDO', gender: 'L', kelas: 'Kelas IX', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252007', password: '123456', nisn: '0136825851', nama: 'BINTAN NAILA AZIZAH', gender: 'P', kelas: 'Kelas VIII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252008', password: '123456', nisn: '0125395109', nama: 'DAFFA ASYAKUR FAWWAZ', gender: 'L', kelas: 'Kelas IX', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252009', password: '123456', nisn: '3124747414', nama: 'DAFFA RIZKY KHAIRIRI', gender: 'L', kelas: 'Kelas VIII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252010', password: '123456', nisn: '0125351919', nama: 'HANIF FAIRUZ AZKA', gender: 'L', kelas: 'Kelas IX', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252011', password: '123456', nisn: '0124866054', nama: 'ISMAIL', gender: 'L', kelas: 'Kelas VIII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252012', password: '123456', nisn: '0123017750', nama: 'KHANSA ADELIA PUTRI', gender: 'P', kelas: 'Kelas VIII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252013', password: '123456', nisn: '0128018297', nama: 'LUTFI NUR SAKINAH', gender: 'P', kelas: 'Kelas VIII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252014', password: '123456', nisn: '3121327921', nama: 'MUHAMMAD ALI RIDLO', gender: 'L', kelas: 'Kelas IX', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252015', password: '123456', nisn: '0126683422', nama: 'MUHAMMAD ISA GHOUJI', gender: 'L', kelas: 'Kelas VIII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252016', password: '123456', nisn: '0112325419', nama: 'MUHAMMAD KHUSNIL HUDA', gender: 'L', kelas: 'Kelas IX', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252017', password: '123456', nisn: '3129653195', nama: 'MUTIA HIDAYATUN SOLIHAH', gender: 'P', kelas: 'Kelas VIII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252018', password: '123456', nisn: '0128088108', nama: 'NAIZAH OKTA FIAZAR', gender: 'P', kelas: 'Kelas VIII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252019', password: '123456', nisn: '0137795178', nama: 'RADITYA NAUFAL GALEN AL JINAN', gender: 'L', kelas: 'Kelas VIII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252020', password: '123456', nisn: '0122163648', nama: 'ROKHIT JAWAHIR AL KAUTSAR', gender: 'L', kelas: 'Kelas IX', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252021', password: '123456', nisn: '3117106558', nama: 'SAIQ FADHOL FAUZI', gender: 'L', kelas: 'Kelas IX', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252022', password: '123456', nisn: '0133654500', nama: 'TITO NABIL ARDANA', gender: 'L', kelas: 'Kelas VIII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252023', password: '123456', nisn: '3123571085', nama: 'VAROHATUS SALAMAH', gender: 'P', kelas: 'Kelas VIII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252024', password: '123456', nisn: '0135584030', nama: "ZAIN JA'FAAR ZAHRAAN", gender: 'L', kelas: 'Kelas VIII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252025', password: '123456', nisn: '0134926354', nama: "ZAUL NUKHSAFATUL' AZMI", gender: 'P', kelas: 'Kelas VIII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252026', password: '123456', nisn: '3122838403', nama: 'ZIDAN ARYA ABIMANA', gender: 'L', kelas: 'Kelas VIII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '20252027', password: '123456', nisn: '0126702377', nama: 'ZULFIKAR AL FARISI', gender: 'L', kelas: 'Kelas IX', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2025' },
-            { nis: '0139496460', password: '123456', nisn: '000139496460', nama: 'AHMAD FADHIL NAJMUDDIN', gender: 'L', kelas: 'Kelas VII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2026' },
-            { nis: '01334731810133473181', password: '123456', nisn: '0001334731810133473181', nama: 'ANDINE AYU NIRMALA', gender: 'P', kelas: 'Kelas VII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2026' },
-            { nis: '3143078636', password: '123456', nisn: '003143078636', nama: 'AZIZAH FIKRI NUR AINI', gender: 'P', kelas: 'Kelas VII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2026' },
-            { nis: '0134978608', password: '123456', nisn: '000134978608', nama: 'NADINE ASIYAH NIRMALA', gender: 'P', kelas: 'Kelas VII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2026' },
-            { nis: '0132236625', password: '123456', nisn: '000132236625', nama: 'QUMILLAILA SALSABILA', gender: 'P', kelas: 'Kelas VII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2026' },
-            { nis: '3139024145', password: '123456', nisn: '003139024145', nama: 'RAFI FIRDAUS AGUSTIAN', gender: 'L', kelas: 'Kelas VII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2026' },
-            { nis: '3131873911', password: '123456', nisn: '003131873911', nama: 'SHINDY EKA ARYA ADIRAN', gender: 'L', kelas: 'Kelas VII', jurusan: '-', ayah: 'Orang Tua', ibu: '-', hp: '-', status: 'Aktif', thnMasuk: '2026' }
-        ];
-
-        const INITIAL_TRANSACTIONS = [
-            {
-                kwitansiNo: 'KWT-20260904-0005',
-                tanggal: '2026-09-04',
-                nis: '20252001',
-                namaSiswa: 'AHMAD FAQIH MURTADLO',
-                posId: 'POS1',
-                posNama: 'SPP Februari',
-                nominal: 300000,
-                metode: 'Cash / Tunai',
-                keterangan: '',
-                petugas: 'Super Administrator'
-            },
-            {
-                kwitansiNo: 'KWT-20260904-0004',
-                tanggal: '2026-09-04',
-                nis: '20252008',
-                namaSiswa: 'DAFFA ASYAKUR FAWWAZ',
-                posId: 'POS1',
-                posNama: 'SPP Januari',
-                nominal: 300000,
-                metode: 'Cash / Tunai',
-                keterangan: '',
-                petugas: 'Super Administrator'
-            },
-            {
-                kwitansiNo: 'KWT-20260904-0003',
-                tanggal: '2026-09-04',
-                nis: '20252001',
-                namaSiswa: 'AHMAD FAQIH MURTADLO',
-                posId: 'POS1',
-                posNama: 'SPP Januari',
-                nominal: 300000,
-                metode: 'Cash / Tunai',
-                keterangan: '',
-                petugas: 'Super Administrator'
-            }
-        ];
-
+        const INITIAL_STUDENTS = [];
+        const INITIAL_TRANSACTIONS = [];
         const INITIAL_LOGS = [
-            { waktu: '4/9/2026, 12.56.16', user: 'Super Administrator', role: 'superadmin', aksi: 'PEMBAYARAN', detail: 'Memproses SPP Februari Rp 300.000 untuk AHMAD FAQIH MURTADLO', device: 'Chrome / Web App' },
-            { waktu: '4/9/2026, 12.47.25', user: 'Super Administrator', role: 'superadmin', aksi: 'PEMBAYARAN', detail: 'Memproses SPP Januari Rp 300.000 untuk DAFFA ASYAKUR FAWWAZ', device: 'Chrome / Web App' },
-            { waktu: '4/9/2026, 12.46.27', user: 'Super Administrator', role: 'superadmin', aksi: 'PEMBAYARAN', detail: 'Memproses SPP Januari Rp 300.000 untuk AHMAD FAQIH MURTADLO', device: 'Chrome / Web App' },
-            { waktu: '4/9/2026, 08:30', user: 'Super Administrator', role: 'superadmin', aksi: 'LOGIN', detail: 'User berhasil login ke sistem', device: 'Chrome / Windows' },
-            { waktu: '4/9/2026, 08:00', user: 'Super Administrator', role: 'superadmin', aksi: 'SISTEM', detail: 'Sistem Pembayaran SMP MQ AL HUDA Siap Digunakan', device: 'Web App' }
+            { waktu: new Date().toLocaleString('id-ID'), user: 'Super Administrator', role: 'superadmin', aksi: 'SISTEM', detail: 'Sistem Pembayaran SMP MQ Siap Digunakan (Database Bersih)', device: 'Web App' }
         ];
+
+        const DB_RESET_KEY = 'paymentApp_clean_reset_20260908';
 
         let state = {
             loggedInUser: {
@@ -1559,7 +1500,7 @@ function respondOutput(obj, callback) {
                 bendahara: 'Ust. Yuli',
                 scriptUrl: 'https://script.google.com/macros/s/AKfycby_HTh_tJkSEXlqtVEXC4rbvbHiRvhGKYYEuw2ZQJZ4gYnKpZ2ZgAifibLabFx7e8hp/exec'
             },
-            students: INITIAL_STUDENTS,
+            students: [],
             kelases: [
                 { id: '1', nama: 'Kelas VII', jurusan: '-', wali: 'Wali Kelas VII' },
                 { id: '5', nama: 'Kelas VIII', jurusan: 'Umum', wali: 'Guru Pengampu' },
@@ -1569,15 +1510,11 @@ function respondOutput(obj, callback) {
                 { ta: '2025/2026', status: 'Nonaktif' },
                 { ta: '2026/2027', status: 'Aktif' }
             ],
-            jenisPembayaran: [
-                { id: 'POS1', nama: 'SPP Bulanan', kategori: 'Bulanan', nominal: 300000, status: 'Aktif', ket: 'SPP rutin per bulan' },
-                { id: 'POS2', nama: 'Uang Seragam Lengkap', kategori: 'Tahunan', nominal: 1200000, status: 'Aktif', ket: 'Seragam batik & olahraga' },
-                { id: 'POS3', nama: 'Uang Gedung / Infaq Bangunan', kategori: 'Bebas', nominal: 3000000, status: 'Aktif', ket: 'Bisa dicicil selama 1 thn' },
-                { id: 'POS4', nama: 'Modul LKS & Buku', kategori: 'Sekali', nominal: 450000, status: 'Aktif', ket: 'Semester Ganjil' }
-            ],
+            jenisPembayaran: [],
             bills: [],
-            transactions: INITIAL_TRANSACTIONS,
-            logs: INITIAL_LOGS
+            transactions: [],
+            logs: INITIAL_LOGS,
+            lastResetTimestamp: 1788800000000
         };
 
         let selectedTrxStudentNis = null;
@@ -1587,11 +1524,11 @@ function respondOutput(obj, callback) {
             state.lastUpdated = Date.now();
             try {
                 localStorage.setItem('paymentAppDB', JSON.stringify(state));
-                // Backup cadangan bertingkat agar data tidak pernah hilang
+                // Backup cadangan bertingkat agar data tersimpan konsisten
                 if (state.schoolInfo) localStorage.setItem('paymentApp_schoolInfo', JSON.stringify(state.schoolInfo));
-                if (state.students && state.students.length > 0) localStorage.setItem('paymentApp_students', JSON.stringify(state.students));
-                if (state.transactions && state.transactions.length > 0) localStorage.setItem('paymentApp_transactions', JSON.stringify(state.transactions));
-                if (state.bills && state.bills.length > 0) localStorage.setItem('paymentApp_bills', JSON.stringify(state.bills));
+                localStorage.setItem('paymentApp_students', JSON.stringify(state.students || []));
+                localStorage.setItem('paymentApp_transactions', JSON.stringify(state.transactions || []));
+                localStorage.setItem('paymentApp_bills', JSON.stringify(state.bills || []));
             } catch (err) {
                 console.error('LocalStorage write error:', err);
             }
@@ -1599,16 +1536,32 @@ function respondOutput(obj, callback) {
         }
 
         window.onload = function() {
-            const savedState = localStorage.getItem('paymentAppDB');
-            if (savedState) {
-                try {
-                    state = JSON.parse(savedState);
-                } catch(e) {
-                    console.error('Error parsing savedState', e);
+            const hasCleanReset = localStorage.getItem(DB_RESET_KEY);
+            if (!hasCleanReset) {
+                // Eksekusi pembersihan total satu kali untuk membuang seluruh data dummy di browser ini
+                localStorage.setItem(DB_RESET_KEY, 'true');
+                localStorage.removeItem('paymentApp_students');
+                localStorage.removeItem('paymentApp_transactions');
+                localStorage.removeItem('paymentApp_bills');
+                localStorage.removeItem('paymentAppDB');
+                state.students = [];
+                state.transactions = [];
+                state.bills = [];
+                state.jenisPembayaran = [];
+                state.lastResetTimestamp = Date.now();
+                saveState();
+            } else {
+                const savedState = localStorage.getItem('paymentAppDB');
+                if (savedState) {
+                    try {
+                        state = JSON.parse(savedState);
+                    } catch(e) {
+                        console.error('Error parsing savedState', e);
+                    }
                 }
             }
 
-            // Pulihkan dari cadangan terpisah jika ada data yang kosong
+            // Pulihkan dari cadangan terpisah jika ada data pengaturan
             const persistentSchoolInfo = localStorage.getItem('paymentApp_schoolInfo');
             if (persistentSchoolInfo) {
                 try {
@@ -1620,25 +1573,6 @@ function respondOutput(obj, callback) {
                 }
             }
 
-            if (!state.students || state.students.length === 0) {
-                const bkStudents = localStorage.getItem('paymentApp_students');
-                if (bkStudents) {
-                    try { state.students = JSON.parse(bkStudents); } catch(e){}
-                }
-            }
-            if (!state.transactions || state.transactions.length === 0) {
-                const bkTrx = localStorage.getItem('paymentApp_transactions');
-                if (bkTrx) {
-                    try { state.transactions = JSON.parse(bkTrx); } catch(e){}
-                }
-            }
-            if (!state.bills || state.bills.length === 0) {
-                const bkBills = localStorage.getItem('paymentApp_bills');
-                if (bkBills) {
-                    try { state.bills = JSON.parse(bkBills); } catch(e){}
-                }
-            }
-
             // Fallback defaults ONLY if empty or missing
             if (!state.schoolInfo) state.schoolInfo = {};
             if (!state.schoolInfo.nama) state.schoolInfo.nama = 'SMP MQ AL HUDA BINANGUN';
@@ -1646,6 +1580,11 @@ function respondOutput(obj, callback) {
             if (!state.schoolInfo.telepon) state.schoolInfo.telepon = '(021) 7890123';
             if (!state.schoolInfo.bendahara) state.schoolInfo.bendahara = 'Ust. Yuli';
             if (!state.schoolInfo.scriptUrl) state.schoolInfo.scriptUrl = 'https://script.google.com/macros/s/AKfycby_HTh_tJkSEXlqtVEXC4rbvbHiRvhGKYYEuw2ZQJZ4gYnKpZ2ZgAifibLabFx7e8hp/exec';
+
+            if (!state.students) state.students = [];
+            if (!state.transactions) state.transactions = [];
+            if (!state.bills) state.bills = [];
+            if (!state.jenisPembayaran) state.jenisPembayaran = [];
 
             // Sync activeTA & tahunAjarans only if empty
             if (!state.activeTA) state.activeTA = '2026/2027';
@@ -1665,44 +1604,7 @@ function respondOutput(obj, callback) {
                 ];
             }
 
-            // Sync students: Ensure authoritative initial students exist without overwriting new ones
-            if (!state.students) state.students = [];
-            const existingNisMap = new Map();
-            state.students.forEach(s => existingNisMap.set(s.nis, s));
-            INITIAL_STUDENTS.forEach(st => {
-                if (!existingNisMap.has(st.nis)) {
-                    state.students.push(st);
-                }
-            });
-
-            // Normalize student class names (e.g. VII -> Kelas VII)
-            state.students.forEach(s => {
-                s.jurusan = '-';
-                if (s.kelas === 'VII' || s.kelas === '7') s.kelas = 'Kelas VII';
-                if (s.kelas === 'VIII' || s.kelas === '8') s.kelas = 'Kelas VIII';
-                if (s.kelas === 'IX' || s.kelas === '9') s.kelas = 'Kelas IX';
-            });
-
-            // Auto-purge old dummy student accounts (Budi, Siti, etc.)
-            const dummyNisList = ['20251001', '20251002', '20251003', '20251004', '20251005'];
-            state.students = state.students.filter(s => !dummyNisList.includes(s.nis));
-            if (state.transactions) {
-                state.transactions = state.transactions.filter(t => !dummyNisList.includes(t.nis) && !['Budi Santoso', 'Siti Rahmawati'].includes(t.namaSiswa));
-            }
-            if (state.bills) {
-                state.bills = state.bills.filter(b => !dummyNisList.includes(b.nis));
-            }
-
-            // Sync transactions: Ensure initial transactions exist without removing user transactions
-            if (!state.transactions) state.transactions = [];
-            const existingKwtSet = new Set(state.transactions.map(t => t.kwitansiNo));
-            INITIAL_TRANSACTIONS.forEach(t => {
-                if (!existingKwtSet.has(t.kwitansiNo)) {
-                    state.transactions.unshift(t);
-                }
-            });
-
-            // Ensure bills are present for all students (Non-destructive: NEVER wipes existing bills)
+            // Pastikan tagihan siswa sinkron
             ensureBillsForStudents();
 
             saveState();
@@ -1804,13 +1706,8 @@ function respondOutput(obj, callback) {
         function syncAllStudentBillsWithPOS(showAlert = false) {
             if (!state.bills) state.bills = [];
             if (!state.students) state.students = [];
-            if (!state.jenisPembayaran || state.jenisPembayaran.length === 0) {
-                state.jenisPembayaran = [
-                    { id: 'POS1', nama: 'SPP Bulanan', kategori: 'Bulanan', targetKelas: 'Semua Kelas', nominal: 300000, status: 'Aktif', ket: 'SPP rutin per bulan' },
-                    { id: 'POS2', nama: 'Uang Seragam Lengkap', kategori: 'Tahunan', targetKelas: 'Semua Kelas', nominal: 1200000, status: 'Aktif', ket: 'Seragam batik & olahraga' },
-                    { id: 'POS3', nama: 'Uang Gedung / Infaq Bangunan', kategori: 'Bebas', targetKelas: 'Semua Kelas', nominal: 3000000, status: 'Aktif', ket: 'Bisa dicicil selama 1 thn' },
-                    { id: 'POS4', nama: 'Modul LKS & Buku', kategori: 'Sekali', targetKelas: 'Semua Kelas', nominal: 450000, status: 'Aktif', ket: 'Semester Ganjil' }
-                ];
+            if (!state.jenisPembayaran) {
+                state.jenisPembayaran = [];
             }
 
             const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -1844,13 +1741,7 @@ function respondOutput(obj, callback) {
                                 if (!bill) {
                                     let dibayar = 0;
                                     let status = 'Belum Lunas';
-                                    if (st.nis === '20252001' && (idx === 0 || idx === 1)) {
-                                        dibayar = pos.nominal;
-                                        status = 'Lunas';
-                                    } else if (st.nis === '20252008' && idx === 0) {
-                                        dibayar = pos.nominal;
-                                        status = 'Lunas';
-                                    } else if (oldPaidAmount > 0 && idx === 0) {
+                                    if (oldPaidAmount > 0 && idx === 0) {
                                         dibayar = oldPaidAmount;
                                         status = dibayar >= pos.nominal ? 'Lunas' : 'Belum Lunas';
                                         oldPaidAmount = 0;
@@ -1900,13 +1791,6 @@ function respondOutput(obj, callback) {
                             if (!bill) {
                                 let dibayar = 0;
                                 let status = 'Belum Lunas';
-                                if (pos.id === 'POS2' && st.thnMasuk !== '2026' && st.kelas !== 'Kelas VII') {
-                                    dibayar = pos.nominal;
-                                    status = 'Lunas';
-                                } else if (pos.id === 'POS3' && st.thnMasuk !== '2026' && st.kelas !== 'Kelas VII') {
-                                    dibayar = Math.min(1500000, pos.nominal);
-                                    status = dibayar >= pos.nominal ? 'Lunas' : 'Belum Lunas';
-                                }
 
                                 state.bills.push({
                                     id: bid,
@@ -2084,30 +1968,45 @@ function respondOutput(obj, callback) {
             }).sort((a,b) => b.totalTunggakan - a.totalTunggakan);
 
             const tbody = document.getElementById('dash-tunggakan-table');
-            tbody.innerHTML = studentTunggakan.slice(0, 4).map(st => `
-                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40">
-                    <td class="p-3 pl-5 font-semibold text-slate-800 dark:text-slate-100">${st.nama} <span class="block text-[10px] text-slate-400 font-normal">NIS: ${st.nis}</span></td>
-                    <td class="p-3">${st.kelas}</td>
-                    <td class="p-3"><span class="px-2 py-0.5 bg-rose-100 text-rose-700 font-bold rounded text-[10px]">${st.unpaidCount} Pos Tagihan</span></td>
-                    <td class="p-3 font-bold text-rose-600 dark:text-rose-400">Rp ${st.totalTunggakan.toLocaleString('id-ID')}</td>
-                    <td class="p-3 pr-5 text-right">
-                        <button onclick="selectStudentForPayment('${st.nis}')" class="px-2.5 py-1 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded text-[11px]">Bayar</button>
-                    </td>
-                </tr>
-            `).join('');
+            if (studentTunggakan.length === 0 || studentTunggakan.every(s => s.totalTunggakan === 0)) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="p-6 text-center text-slate-400 text-xs">
+                            <i class="fa-solid fa-circle-check text-emerald-500 text-lg mb-1 block"></i>
+                            Tidak ada data tunggakan. Database bersih.
+                        </td>
+                    </tr>
+                `;
+            } else {
+                tbody.innerHTML = studentTunggakan.slice(0, 4).map(st => `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40">
+                        <td class="p-3 pl-5 font-semibold text-slate-800 dark:text-slate-100">${st.nama} <span class="block text-[10px] text-slate-400 font-normal">NIS: ${st.nis}</span></td>
+                        <td class="p-3">${st.kelas}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 bg-rose-100 text-rose-700 font-bold rounded text-[10px]">${st.unpaidCount} Pos Tagihan</span></td>
+                        <td class="p-3 font-bold text-rose-600 dark:text-rose-400">Rp ${st.totalTunggakan.toLocaleString('id-ID')}</td>
+                        <td class="p-3 pr-5 text-right">
+                            <button onclick="selectStudentForPayment('${st.nis}')" class="px-2.5 py-1 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded text-[11px]">Bayar</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
 
             // Recent Logs
             const recentLogs = document.getElementById('dash-recent-logs');
-            recentLogs.innerHTML = state.logs.slice(0, 3).map(l => `
-                <div class="flex items-start space-x-3 text-xs">
-                    <div class="w-2 h-2 rounded-full bg-brand-500 mt-1.5 flex-shrink-0"></div>
-                    <div>
-                        <span class="font-bold text-slate-700 dark:text-slate-200">${l.user}</span>
-                        <p class="text-slate-500 dark:text-slate-400 mt-0.5">${l.detail}</p>
-                        <span class="text-[10px] text-slate-400">${l.waktu}</span>
+            if (!state.logs || state.logs.length === 0) {
+                recentLogs.innerHTML = `<p class="text-xs text-slate-400 py-2">Belum ada riwayat aktivitas.</p>`;
+            } else {
+                recentLogs.innerHTML = state.logs.slice(0, 3).map(l => `
+                    <div class="flex items-start space-x-3 text-xs">
+                        <div class="w-2 h-2 rounded-full bg-brand-500 mt-1.5 flex-shrink-0"></div>
+                        <div>
+                            <span class="font-bold text-slate-700 dark:text-slate-200">${l.user}</span>
+                            <p class="text-slate-500 dark:text-slate-400 mt-0.5">${l.detail}</p>
+                            <span class="text-[10px] text-slate-400">${l.waktu}</span>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `).join('');
+            }
         }
 
         let chartBulananObj = null;
@@ -2590,6 +2489,18 @@ function respondOutput(obj, callback) {
                     // Cloud masih kosong, upload state lokal sekarang juga
                     syncFullStateToCloud();
                     updateSyncBadgeStatus('online', 'Data Lokal Diunggah');
+                    return;
+                }
+
+                // Cek jika local telah direset bersih dan waktu reset lebih baru daripada data cloud
+                const localReset = state.lastResetTimestamp || 0;
+                const cloudReset = (cloudData && cloudData.lastResetTimestamp) || 0;
+                const cloudUpdated = (cloudData && cloudData.lastUpdated) || 0;
+
+                if (localReset > cloudReset && localReset > cloudUpdated) {
+                    console.log('Data cloud masih data lama sebelum reset. Menimpa cloud dengan database bersih...');
+                    syncFullStateToCloud();
+                    updateSyncBadgeStatus('online', 'Database Bersih Disinkronkan');
                     return;
                 }
 
@@ -3308,6 +3219,17 @@ function respondOutput(obj, callback) {
             });
 
             const tbody = document.getElementById('master-siswa-tbody');
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="p-8 text-center text-slate-400 text-xs">
+                            <i class="fa-solid fa-user-slash text-2xl mb-2 block text-slate-300 dark:text-slate-600"></i>
+                            Belum ada data siswa. Klik tombol <b>"Tambah Siswa"</b> di atas untuk menambahkan siswa baru secara manual.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
             tbody.innerHTML = filtered.map(s => `
                 <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40">
                     <td class="p-3 pl-5 font-mono font-bold text-slate-800 dark:text-slate-100">${s.nis} <span class="block text-[10px] text-slate-400 font-normal">NISN: ${s.nisn}</span></td>
@@ -3727,6 +3649,16 @@ function respondOutput(obj, callback) {
 
         function renderJenisPembayaran() {
             const grid = document.getElementById('jenis-pembayaran-grid');
+            if (!state.jenisPembayaran || state.jenisPembayaran.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
+                        <i class="fa-solid fa-folder-open text-4xl text-slate-300 dark:text-slate-600 mb-3 block"></i>
+                        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">Belum Ada Pos Pembayaran</p>
+                        <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Database telah direset bersih. Klik tombol <b>"Tambah Pos Pembayaran"</b> di atas untuk membuat pos pembayaran manual.</p>
+                    </div>
+                `;
+                return;
+            }
             grid.innerHTML = state.jenisPembayaran.map(p => `
                 <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm relative flex flex-col justify-between">
                     <div>
@@ -4987,6 +4919,84 @@ function respondOutput(obj, callback) {
                 event.target.value = ''; // Reset input file
             };
             reader.readAsText(file);
+        }
+
+        /* ====================================================================
+         * RESET TOTAL DATABASE KE STATUS BERSIH DARI AWAL
+         * ==================================================================== */
+        function confirmResetAllData() {
+            Swal.fire({
+                title: 'RESET TOTAL DATABASE?',
+                html: `
+                    <div class="text-left text-xs space-y-2.5 text-slate-700 dark:text-slate-200">
+                        <p class="font-bold text-rose-600 dark:text-rose-400">
+                            <i class="fa-solid fa-triangle-exclamation mr-1"></i> Perhatian: Tindakan ini akan mengosongkan:
+                        </p>
+                        <ul class="list-disc pl-5 space-y-1 text-slate-600 dark:text-slate-300">
+                            <li>Seluruh <b>Data Siswa</b> (${state.students ? state.students.length : 0} siswa)</li>
+                            <li>Seluruh <b>Riwayat Transaksi & Kwitansi</b> (${state.transactions ? state.transactions.length : 0} transaksi)</li>
+                            <li>Seluruh <b>Tagihan Pembayaran Siswa</b> (${state.bills ? state.bills.length : 0} tagihan)</li>
+                            <li>Seluruh <b>Master Pos Pembayaran</b> (${state.jenisPembayaran ? state.jenisPembayaran.length : 0} pos)</li>
+                        </ul>
+                        <div class="p-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-amber-800 dark:text-amber-300">
+                            <b>Catatan Aman:</b> Akun login Super Administrator (admin) dan Pengaturan Identitas Sekolah (Alamat & Google Script URL) <b>tetap aman tersimpan</b>.
+                        </div>
+                    </div>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e11d48',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Kosongkan & Reset Sekarang',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    executeCleanReset(true);
+                }
+            });
+        }
+
+        function executeCleanReset(showAlert = true) {
+            state.students = [];
+            state.transactions = [];
+            state.bills = [];
+            state.jenisPembayaran = [];
+            state.lastResetTimestamp = Date.now();
+            if (!state.logs) state.logs = [];
+            state.logs.unshift({
+                waktu: new Date().toLocaleString('id-ID'),
+                user: (state.loggedInUser ? state.loggedInUser.name : 'Super Administrator'),
+                role: state.activeRole,
+                aksi: 'RESET TOTAL',
+                detail: 'Admin melakukan reset total database menjadi bersih dari awal untuk diisi manual.',
+                device: 'Web App'
+            });
+
+            localStorage.setItem(DB_RESET_KEY, 'true');
+            localStorage.removeItem('paymentApp_students');
+            localStorage.removeItem('paymentApp_transactions');
+            localStorage.removeItem('paymentApp_bills');
+
+            saveState();
+            syncFullStateToCloud();
+            initializeMainUI();
+
+            if (showAlert) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Database Bersih Total!',
+                    html: `
+                        <div class="text-left text-xs space-y-2 p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200">
+                            <p class="flex items-center"><i class="fa-solid fa-circle-check text-emerald-600 mr-2"></i> Siswa: <b>0 siswa</b> (Bersih)</p>
+                            <p class="flex items-center"><i class="fa-solid fa-circle-check text-emerald-600 mr-2"></i> Transaksi: <b>0 transaksi</b> (Bersih)</p>
+                            <p class="flex items-center"><i class="fa-solid fa-circle-check text-emerald-600 mr-2"></i> Tagihan: <b>0 tagihan</b> (Bersih)</p>
+                            <p class="flex items-center"><i class="fa-solid fa-circle-check text-emerald-600 mr-2"></i> Pos Pembayaran: <b>0 pos</b> (Bersih)</p>
+                            <p class="mt-2 text-[11px] text-slate-500 dark:text-slate-400">Database siap untuk diisi data asli sekolah secara manual dari menu Master Siswa & Jenis Pembayaran.</p>
+                        </div>
+                    `,
+                    confirmButtonColor: '#0284c7'
+                });
+            }
         }
 
         /* ====================================================================
