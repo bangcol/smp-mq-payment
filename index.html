@@ -333,8 +333,8 @@
                     <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex items-center justify-between">
                         <div>
                             <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Jumlah Siswa</p>
-                            <h3 class="text-2xl font-bold text-slate-900 dark:text-white mt-1" id="dash-stat-siswa">384</h3>
-                            <p class="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1"><i class="fa-solid fa-user-check"></i> Active Enrollment</p>
+                            <h3 class="text-2xl font-bold text-slate-900 dark:text-white mt-1" id="dash-stat-siswa">0</h3>
+                            <p class="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1" id="dash-stat-siswa-desc"><i class="fa-solid fa-user-check"></i> 0 Santri Terdaftar</p>
                         </div>
                         <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 flex items-center justify-center text-xl">
                             <i class="fa-solid fa-users"></i>
@@ -345,8 +345,8 @@
                     <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex items-center justify-between">
                         <div>
                             <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Bayar Hari Ini</p>
-                            <h3 class="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1" id="dash-stat-today">Rp 3.850.000</h3>
-                            <p class="text-[11px] text-slate-400 mt-1" id="dash-stat-today-count">12 Transaksi</p>
+                            <h3 class="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1" id="dash-stat-today">Rp 0</h3>
+                            <p class="text-[11px] text-slate-400 mt-1" id="dash-stat-today-count">0 Transaksi</p>
                         </div>
                         <div class="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300 flex items-center justify-center text-xl">
                             <i class="fa-solid fa-calendar-day"></i>
@@ -357,8 +357,8 @@
                     <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex items-center justify-between">
                         <div>
                             <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Bayar Bulan Ini</p>
-                            <h3 class="text-xl font-bold text-brand-600 dark:text-brand-400 mt-1" id="dash-stat-month">Rp 64.200.000</h3>
-                            <p class="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1"><i class="fa-solid fa-arrow-trend-up"></i> +14% vs Bln Lalu</p>
+                            <h3 class="text-xl font-bold text-brand-600 dark:text-brand-400 mt-1" id="dash-stat-month">Rp 0</h3>
+                            <p class="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1" id="dash-stat-month-desc"><i class="fa-solid fa-receipt mr-1"></i> 0 Transaksi</p>
                         </div>
                         <div class="w-12 h-12 rounded-xl bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-300 flex items-center justify-center text-xl">
                             <i class="fa-solid fa-vault"></i>
@@ -369,8 +369,8 @@
                     <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex items-center justify-between">
                         <div>
                             <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Tunggakan</p>
-                            <h3 class="text-xl font-bold text-rose-600 dark:text-rose-400 mt-1" id="dash-stat-tunggakan">Rp 42.150.000</h3>
-                            <p class="text-[11px] text-rose-500 mt-1">Perlu Tindak Lanjut</p>
+                            <h3 class="text-xl font-bold text-rose-600 dark:text-rose-400 mt-1" id="dash-stat-tunggakan">Rp 0</h3>
+                            <p class="text-[11px] text-slate-400 mt-1" id="dash-stat-tunggakan-desc">Status Tagihan Terkini</p>
                         </div>
                         <div class="w-12 h-12 rounded-xl bg-rose-50 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300 flex items-center justify-center text-xl">
                             <i class="fa-solid fa-triangle-exclamation"></i>
@@ -381,8 +381,8 @@
                     <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex items-center justify-between">
                         <div>
                             <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pos Pembayaran</p>
-                            <h3 class="text-2xl font-bold text-slate-900 dark:text-white mt-1" id="dash-stat-pos">8 Pos</h3>
-                            <p class="text-[11px] text-slate-400 mt-1">SPP, Seragam, dll</p>
+                            <h3 class="text-2xl font-bold text-slate-900 dark:text-white mt-1" id="dash-stat-pos">0 Pos</h3>
+                            <p class="text-[11px] text-slate-400 mt-1" id="dash-stat-pos-desc">Belum ada pos aktif</p>
                         </div>
                         <div class="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 flex items-center justify-center text-xl">
                             <i class="fa-solid fa-list-check"></i>
@@ -1881,6 +1881,10 @@ function respondOutput(obj, callback) {
                 activeNav.classList.add('bg-brand-50', 'text-brand-600', 'dark:bg-slate-700', 'dark:text-brand-300');
             }
 
+            if(viewId === 'dashboard') {
+                renderDashboard();
+                initCharts();
+            }
             if(viewId === 'laporan') generateReport();
             if(viewId === 'jenis-bayar') renderJenisPembayaran();
             if(viewId === 'siswa') renderMasterSiswaTable();
@@ -1936,21 +1940,81 @@ function respondOutput(obj, callback) {
 
         /* DASHBOARD LOGIC & CHARTS */
         function renderDashboard() {
-            document.getElementById('dash-stat-siswa').innerText = state.students.length;
+            // Metric 1: Total Siswa
+            const totalSiswa = (state.students || []).length;
+            const elSiswa = document.getElementById('dash-stat-siswa');
+            if (elSiswa) elSiswa.innerText = totalSiswa;
+            const elSiswaDesc = document.getElementById('dash-stat-siswa-desc');
+            if (elSiswaDesc) {
+                elSiswaDesc.innerHTML = `<i class="fa-solid fa-user-check"></i> ${totalSiswa} Santri Terdaftar`;
+            }
             
-            // Calculate today's payments
+            // Metric 2: Calculate today's payments
             const todayStr = new Date().toISOString().split('T')[0];
-            const todayTrx = state.transactions.filter(t => t.tanggal === todayStr);
-            const totalToday = todayTrx.reduce((acc, curr) => acc + curr.nominal, 0);
-            document.getElementById('dash-stat-today').innerText = `Rp ${totalToday.toLocaleString('id-ID')}`;
-            document.getElementById('dash-stat-today-count').innerText = `${todayTrx.length} Transaksi`;
+            const todayTrx = (state.transactions || []).filter(t => t.tanggal === todayStr);
+            const totalToday = todayTrx.reduce((acc, curr) => acc + (Number(curr.nominal) || 0), 0);
+            const elToday = document.getElementById('dash-stat-today');
+            if (elToday) elToday.innerText = `Rp ${totalToday.toLocaleString('id-ID')}`;
+            const elTodayCount = document.getElementById('dash-stat-today-count');
+            if (elTodayCount) elTodayCount.innerText = `${todayTrx.length} Transaksi`;
 
-            // Calculate total tunggakan
-            let totalTunggakan = 0;
-            state.bills.forEach(b => {
-                totalTunggakan += (b.nominal - b.dibayar);
+            // Metric 3: Calculate this month's payments (Bayar Bulan Ini)
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth(); // 0-11
+            const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            const currentMonthName = monthNames[currentMonth];
+            const currentYearMonthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+
+            const monthTrx = (state.transactions || []).filter(t => {
+                if (!t.tanggal) return false;
+                if (typeof t.tanggal === 'string' && t.tanggal.startsWith(currentYearMonthPrefix)) return true;
+                const d = new Date(t.tanggal);
+                return !isNaN(d.getTime()) && d.getFullYear() === currentYear && d.getMonth() === currentMonth;
             });
-            document.getElementById('dash-stat-tunggakan').innerText = `Rp ${totalTunggakan.toLocaleString('id-ID')}`;
+            const totalMonth = monthTrx.reduce((acc, curr) => acc + (Number(curr.nominal) || 0), 0);
+
+            const elMonth = document.getElementById('dash-stat-month');
+            if (elMonth) elMonth.innerText = `Rp ${totalMonth.toLocaleString('id-ID')}`;
+            const elMonthDesc = document.getElementById('dash-stat-month-desc');
+            if (elMonthDesc) {
+                elMonthDesc.innerHTML = `<i class="fa-solid fa-receipt mr-1"></i> ${monthTrx.length} Transaksi (${currentMonthName} ${currentYear})`;
+            }
+
+            // Metric 4: Calculate total tunggakan
+            let totalTunggakan = 0;
+            (state.bills || []).forEach(b => {
+                totalTunggakan += (Number(b.nominal) - Number(b.dibayar));
+            });
+            const elTunggakan = document.getElementById('dash-stat-tunggakan');
+            if (elTunggakan) elTunggakan.innerText = `Rp ${totalTunggakan.toLocaleString('id-ID')}`;
+            const elTunggakanDesc = document.getElementById('dash-stat-tunggakan-desc');
+            if (elTunggakanDesc) {
+                if (totalTunggakan > 0) {
+                    elTunggakanDesc.innerHTML = `<span class="text-rose-500 font-semibold"><i class="fa-solid fa-circle-exclamation mr-1"></i>Perlu Tindak Lanjut</span>`;
+                } else {
+                    elTunggakanDesc.innerHTML = `<span class="text-emerald-500 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i>Tidak Ada Tunggakan</span>`;
+                }
+            }
+
+            // Metric 5: Calculate & sync Pos Pembayaran
+            const posList = state.jenisPembayaran || [];
+            const posCount = posList.length;
+            const elPos = document.getElementById('dash-stat-pos');
+            if (elPos) elPos.innerText = `${posCount} Pos`;
+            const elPosDesc = document.getElementById('dash-stat-pos-desc');
+            if (elPosDesc) {
+                if (posCount === 0) {
+                    elPosDesc.innerText = 'Belum ada pos aktif';
+                } else {
+                    const posNames = posList.map(p => p.nama).filter(Boolean);
+                    if (posNames.length <= 2) {
+                        elPosDesc.innerText = posNames.join(', ');
+                    } else {
+                        elPosDesc.innerText = `${posNames.slice(0, 2).join(', ')}, dll`;
+                    }
+                }
+            }
 
             // Top Tunggakan Table
             const studentTunggakan = state.students.map(st => {
@@ -2608,13 +2672,15 @@ function respondOutput(obj, callback) {
                         mergedTrx.length > (cloudData.transactions || []).length ||
                         mergedBills.length > (cloudData.bills || []).length ||
                         mergedKelases.length > (cloudData.kelases || []).length ||
-                        mergedTahunAjarans.length > (cloudData.tahunAjarans || []).length
+                        mergedTahunAjarans.length > (cloudData.tahunAjarans || []).length ||
+                        mergedJenisPembayaran.length > (cloudData.jenisPembayaran || []).length
                     );
 
                     // Preserve active login & count comparison
                     const currentLoggedIn = state.loggedInUser;
                     const prevTrxCount = (state.transactions || []).length;
                     const prevStudentCount = (state.students || []).length;
+                    const prevPosCount = (state.jenisPembayaran || []).length;
 
                     state = {
                         ...cloudData,
@@ -2653,7 +2719,7 @@ function respondOutput(obj, callback) {
 
                     if (state.loggedInUser) {
                         renderSettings();
-                        if (prevTrxCount !== mergedTrx.length || prevStudentCount !== mergedStudents.length || isManual) {
+                        if (prevTrxCount !== mergedTrx.length || prevStudentCount !== mergedStudents.length || prevPosCount !== mergedJenisPembayaran.length || isManual) {
                             initializeMainUI();
                         }
                     }

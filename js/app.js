@@ -208,15 +208,25 @@ function renderDashboard() {
     // Metric 1: Active Siswa
     document.getElementById('dash-stat-siswa').textContent = siswaList.filter(s => s.status === 'Aktif').length;
 
-    // Metric 2: Bayar Hari Ini (Assume current mock date is 2025-08-12 or today)
+    // Metric 2: Bayar Hari Ini
     const todayStr = new Date().toISOString().split('T')[0];
-    const todayTrx = trxList.filter(t => t.tanggal === todayStr || t.tanggal === '2025-08-12');
+    const todayTrx = trxList.filter(t => t.tanggal === todayStr);
     const todayTotal = todayTrx.reduce((sum, t) => sum + Number(t.nominal), 0);
     document.getElementById('dash-stat-today').textContent = formatRupiah(todayTotal);
     document.getElementById('dash-stat-today-count').textContent = `${todayTrx.length} Transaksi`;
 
     // Metric 3: Bayar Bulan Ini
-    const monthTotal = trxList.reduce((sum, t) => sum + Number(t.nominal), 0);
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const currentYearMonthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+    const monthTrx = trxList.filter(t => {
+        if (!t.tanggal) return false;
+        if (typeof t.tanggal === 'string' && t.tanggal.startsWith(currentYearMonthPrefix)) return true;
+        const d = new Date(t.tanggal);
+        return !isNaN(d.getTime()) && d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+    });
+    const monthTotal = monthTrx.reduce((sum, t) => sum + Number(t.nominal), 0);
     document.getElementById('dash-stat-month').textContent = formatRupiah(monthTotal);
 
     // Metric 4: Total Tunggakan (Global Estimate)
