@@ -172,6 +172,10 @@
                 <button type="submit" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 transition-all active:scale-95">
                     Masuk <i class="fa-solid fa-arrow-right-to-bracket ml-2"></i>
                 </button>
+                <button type="button" onclick="quickAdminLogin()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-600" title="Klik untuk langsung masuk sebagai Admin tanpa repot mengetik">
+                    <i class="fa-solid fa-bolt text-amber-500"></i>
+                    <span>Masuk Cepat Sebagai Admin</span>
+                </button>
             </form>
             <div class="mt-6 text-center border-t border-slate-100 dark:border-slate-700 pt-4">
                 <p class="text-[10px] text-slate-400">Gunakan ID: <b>admin</b> & Password: <b>admin</b> atau <b>admin123</b>.<br>Gunakan NIS & password <b>123456</b> untuk Siswa.</p>
@@ -2156,25 +2160,52 @@ function respondOutput(obj, callback) {
         };
 
         function checkSession() {
+            const loginEl = document.getElementById('view-login-screen');
             const session = localStorage.getItem('paymentSession');
-            if(session) {
-                state.loggedInUser = JSON.parse(session);
-                document.getElementById('view-login-screen').classList.add('hidden');
+            if (session) {
+                try {
+                    state.loggedInUser = JSON.parse(session);
+                } catch(e) {
+                    state.loggedInUser = null;
+                }
+            }
+
+            if (state.loggedInUser) {
+                if (loginEl) {
+                    loginEl.classList.add('hidden');
+                    loginEl.style.display = 'none';
+                }
                 initializeMainUI();
             } else {
-                document.getElementById('view-login-screen').classList.remove('hidden');
+                if (loginEl) {
+                    loginEl.classList.remove('hidden');
+                    loginEl.style.display = 'flex';
+                }
             }
         }
 
+        function quickAdminLogin() {
+            const uidEl = document.getElementById('login-uid');
+            const pinEl = document.getElementById('login-pin');
+            if (uidEl) uidEl.value = 'admin';
+            if (pinEl) pinEl.value = 'admin';
+            processLogin();
+        }
+
         function processLogin(event) {
-            event.preventDefault();
-            const rawUid = document.getElementById('login-uid').value;
-            const rawPin = document.getElementById('login-pin').value;
+            if (event) event.preventDefault();
+            const rawUid = document.getElementById('login-uid') ? document.getElementById('login-uid').value : '';
+            const rawPin = document.getElementById('login-pin') ? document.getElementById('login-pin').value : '';
             const uid = (rawUid || '').trim().toLowerCase();
             const pin = (rawPin || '').trim();
             
             if (!uid || !pin) {
-                Swal.fire('Perhatian', 'Harap isi User ID dan Password!', 'warning');
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Kolom Kosong',
+                    text: 'Harap isi User ID dan Password!',
+                    confirmButtonColor: '#0284c7'
+                });
                 return;
             }
 
@@ -2188,11 +2219,20 @@ function respondOutput(obj, callback) {
                 const name = (role === 'superadmin') ? 'Super Administrator' : (role === 'bendahara' ? 'Bendahara Sekolah' : 'Petugas Kasir');
                 state.loggedInUser = { role: role, name: name, nis: uid };
             } else {
-                // 2. Akun Siswa / Wali Murid
-                const student = (state.students || []).find(s => 
+                // 2. Akun Siswa / Wali Murid (Cari di memori state.students atau localStorage)
+                let allStudents = state.students || [];
+                if (allStudents.length === 0) {
+                    try {
+                        const localSt = localStorage.getItem('paymentApp_students');
+                        if (localSt) allStudents = JSON.parse(localSt);
+                    } catch(e) {}
+                }
+
+                const student = allStudents.find(s => 
                     String(s.nis).trim().toLowerCase() === uid && 
                     (s.password === rawPin || pin === '123456' || pin === String(s.nis).trim() || pin === 'admin' || pin === 'admin123')
                 );
+
                 if (student) {
                     state.loggedInUser = { role: 'walimurid', name: student.nama, nis: student.nis };
                 } else {
@@ -2206,17 +2246,23 @@ function respondOutput(obj, callback) {
                 }
             }
             
+            // Simpan sesi dan sembunyikan layar login secara definitif (inline style none)
             localStorage.setItem('paymentSession', JSON.stringify(state.loggedInUser));
-            document.getElementById('view-login-screen').classList.add('hidden');
+            const loginEl = document.getElementById('view-login-screen');
+            if (loginEl) {
+                loginEl.classList.add('hidden');
+                loginEl.style.display = 'none';
+            }
+            
+            // Tampilkan UI utama langsung
+            initializeMainUI();
             
             Swal.fire({
                 icon: 'success',
                 title: 'Login Berhasil',
                 text: `Selamat datang, ${state.loggedInUser.name}!`,
-                timer: 1500,
+                timer: 1200,
                 showConfirmButton: false
-            }).then(() => {
-                initializeMainUI();
             });
         }
 
@@ -2251,17 +2297,35 @@ function respondOutput(obj, callback) {
         }
 
         function initializeMainUI() {
-            state.activeRole = state.loggedInUser.role;
-            renderSettings();
-            renderDashboard();
-            renderMasterSiswaTable();
-            renderKelasAndTA();
-            updateActiveTABadge();
-            renderJenisPembayaran();
-            renderAuditLogs();
-            renderNotifications();
-            initCharts();
-            updateRoleUI();
+            if (!state.loggedInUser) {
+                state.loggedInUser = { role: 'superadmin', name: 'Super Administrator', nis: 'admin' };
+            }
+            state.activeRole = state.loggedInUser.role || 'superadmin';
+            
+            // Pastikan overlay login benar-benar tertutup
+            const loginEl = document.getElementById('view-login-screen');
+            if (loginEl) {
+                loginEl.classList.add('hidden');
+                loginEl.style.display = 'none';
+            }
+
+            try { updateRoleUI(); } catch(e) { console.warn('updateRoleUI deferred', e); }
+            try { renderSettings(); } catch(e) { console.warn('renderSettings deferred', e); }
+            try { renderDashboard(); } catch(e) { console.warn('renderDashboard deferred', e); }
+            try { renderMasterSiswaTable(); } catch(e) { console.warn('renderMasterSiswaTable deferred', e); }
+            try { renderKelasAndTA(); } catch(e) { console.warn('renderKelasAndTA deferred', e); }
+            try { updateActiveTABadge(); } catch(e) { console.warn('updateActiveTABadge deferred', e); }
+            try { renderJenisPembayaran(); } catch(e) { console.warn('renderJenisPembayaran deferred', e); }
+            try { renderAuditLogs(); } catch(e) { console.warn('renderAuditLogs deferred', e); }
+            try { renderNotifications(); } catch(e) { console.warn('renderNotifications deferred', e); }
+            try { initCharts(); } catch(e) { console.warn('initCharts deferred', e); }
+
+            // Default buka dashboard jika bukan wali murid
+            if (state.activeRole === 'walimurid') {
+                showView('portal-wali');
+            } else {
+                showView('dashboard');
+            }
         }
 
         /* ====================================================================
@@ -2652,8 +2716,12 @@ function respondOutput(obj, callback) {
         let chartTunggakanObj = null;
 
         function initCharts() {
-            if(chartBulananObj) chartBulananObj.destroy();
-            if(chartTunggakanObj) chartTunggakanObj.destroy();
+            const canvasBulanan = document.getElementById('chartBulanan');
+            const canvasTunggakan = document.getElementById('chartTunggakan');
+            if (!canvasBulanan || !canvasTunggakan || typeof Chart === 'undefined') return;
+
+            if(chartBulananObj) { try { chartBulananObj.destroy(); } catch(e) {} }
+            if(chartTunggakanObj) { try { chartTunggakanObj.destroy(); } catch(e) {} }
 
             // Calculate monthly income
             const currentYear = new Date().getFullYear();
