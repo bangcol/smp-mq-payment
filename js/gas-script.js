@@ -95,14 +95,16 @@ function hashPassword(password, salt) {
 // Concurrency Lock Helper
 function executeWithLock(fn) {
   const lock = LockService.getScriptLock();
+  const acquired = lock.tryLock(15000); // 15 detik timeout
+  if (!acquired) {
+    throw new Error("Server sedang sibuk memproses transaksi lain. Silakan coba kembali dalam beberapa detik.");
+  }
   try {
-    const acquired = lock.waitLock(15000); // 15 detik timeout
-    if (!acquired) {
-      throw new Error("Server sedang sibuk memproses transaksi lain. Silakan coba kembali dalam beberapa detik.");
-    }
     return fn();
   } finally {
-    lock.releaseLock();
+    try {
+      lock.releaseLock();
+    } catch (e) {}
   }
 }
 
