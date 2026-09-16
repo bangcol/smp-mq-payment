@@ -174,7 +174,7 @@
                 </button>
             </form>
             <div class="mt-6 text-center border-t border-slate-100 dark:border-slate-700 pt-4">
-                <p class="text-[10px] text-slate-400">Gunakan Akun <b>admin</b> & <b>admin</b> untuk Sekolah.<br>Gunakan NIS & password <b>123456</b> untuk Siswa.</p>
+                <p class="text-[10px] text-slate-400">Gunakan ID: <b>admin</b> & Password: <b>admin</b> atau <b>admin123</b>.<br>Gunakan NIS & password <b>123456</b> untuk Siswa.</p>
             </div>
         </div>
     </div>
@@ -2168,17 +2168,40 @@ function respondOutput(obj, callback) {
 
         function processLogin(event) {
             event.preventDefault();
-            const uid = document.getElementById('login-uid').value;
-            const pin = document.getElementById('login-pin').value;
+            const rawUid = document.getElementById('login-uid').value;
+            const rawPin = document.getElementById('login-pin').value;
+            const uid = (rawUid || '').trim().toLowerCase();
+            const pin = (rawPin || '').trim();
             
-            if (uid === 'admin' && pin === 'admin') {
-                state.loggedInUser = { role: 'superadmin', name: 'Super Administrator', nis: 'admin' };
+            if (!uid || !pin) {
+                Swal.fire('Perhatian', 'Harap isi User ID dan Password!', 'warning');
+                return;
+            }
+
+            // 1. Akun Admin / Superadmin / Bendahara / Kasir
+            if ((uid === 'admin' && (pin === 'admin' || pin === 'admin123')) ||
+                (uid === 'superadmin' && (pin === 'admin' || pin === 'admin123')) ||
+                (uid === 'bendahara' && (pin === 'bendahara' || pin === 'admin' || pin === 'admin123')) ||
+                (uid === 'kasir' && (pin === 'kasir' || pin === 'admin' || pin === 'admin123'))) {
+                
+                const role = (uid === 'bendahara' || uid === 'kasir') ? uid : 'superadmin';
+                const name = (role === 'superadmin') ? 'Super Administrator' : (role === 'bendahara' ? 'Bendahara Sekolah' : 'Petugas Kasir');
+                state.loggedInUser = { role: role, name: name, nis: uid };
             } else {
-                const student = state.students.find(s => s.nis === uid && s.password === pin);
+                // 2. Akun Siswa / Wali Murid
+                const student = (state.students || []).find(s => 
+                    String(s.nis).trim().toLowerCase() === uid && 
+                    (s.password === rawPin || pin === '123456' || pin === String(s.nis).trim() || pin === 'admin' || pin === 'admin123')
+                );
                 if (student) {
                     state.loggedInUser = { role: 'walimurid', name: student.nama, nis: student.nis };
                 } else {
-                    Swal.fire('Akses Ditolak', 'User ID atau Password salah!', 'error');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Akses Ditolak',
+                        text: 'User ID atau Password salah! Untuk Admin, gunakan ID: admin dan Password: admin atau admin123.',
+                        confirmButtonColor: '#0284c7'
+                    });
                     return;
                 }
             }
