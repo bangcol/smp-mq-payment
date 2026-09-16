@@ -118,6 +118,32 @@
 </head>
 <body class="h-full flex flex-col antialiased text-slate-800 bg-slate-100 dark:bg-slate-900 dark:text-slate-100">
 
+    
+    <!-- PUBLIC RECEIPT VERIFICATION OVERLAY (REALTIME QR CHECK) -->
+    <div id="view-verify-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-100 dark:bg-slate-900 p-4 hidden overflow-y-auto">
+        <div class="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-lg mx-auto">
+            <div class="flex items-center space-x-3 pb-4 border-b border-slate-100 dark:border-slate-700 mb-5">
+                <div class="w-12 h-12 rounded-xl bg-white flex items-center justify-center border border-slate-200 p-1 shadow-sm">
+                    <img src="logo.png" alt="Logo" class="w-full h-full object-contain" onerror="this.style.display='none';">
+                </div>
+                <div>
+                    <h2 class="font-extrabold text-slate-900 dark:text-white text-base leading-tight">SMP MQ AL HUDA BINANGUN</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Pusat Verifikasi Keaslian Kwitansi Resmi</p>
+                </div>
+            </div>
+
+            <div id="verify-result-content">
+                <!-- Dynamically rendered -->
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700 text-center">
+                <button onclick="window.location.href = window.location.pathname" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow transition">
+                    <i class="fa-solid fa-arrow-left mr-1.5"></i> Buka Aplikasi Utama
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- LOGIN SCREEN OVERLAY -->
     <div id="view-login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-50 dark:bg-slate-900">
         <div class="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md mx-4">
@@ -833,6 +859,10 @@
                             </select>
                         </div>
                         <div class="flex items-end space-x-2">
+                            <button onclick="openModalRekonsiliasiKas()" class="py-2 px-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg shadow-sm hover:shadow transition flex items-center justify-center gap-1.5" title="Rekonsiliasi Kas Harian Bendahara & Tutup Kasir">
+                                <i class="fa-solid fa-scale-balanced"></i>
+                                <span>Rekonsiliasi Kas</span>
+                            </button>
                             <button onclick="exportReportExcel()" class="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm hover:shadow transition flex items-center justify-center gap-1.5" title="Unduh Laporan Format Excel (.xls) Kolom Rapi">
                                 <i class="fa-solid fa-file-excel text-emerald-100"></i>
                                 <span>Unduh Excel (.xls)</span>
@@ -1229,17 +1259,43 @@ function respondOutput(obj, callback) {
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Nominal Yang Dibayarkan (Rp)</label>
-                    <input type="number" id="modal-bayar-nominal" required class="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-base font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-brand-500">
-                    <p class="text-[11px] text-slate-400 mt-1" id="modal-bayar-nominal-hint">Bisa dicicil untuk pembayaran kategori "Bebas".</p>
+                    <input type="number" id="modal-bayar-nominal" oninput="calculateCashChange()" required class="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-base font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-brand-500">
+                    <p class="text-[11px] text-brand-600 dark:text-brand-400 font-semibold mt-1" id="modal-bayar-terbilang-preview"># Nol Rupiah #</p>
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Metode Pembayaran</label>
-                    <select id="modal-bayar-metode" class="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-semibold outline-none">
+                    <select id="modal-bayar-metode" onchange="toggleMetodeBayarFields()" class="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-semibold outline-none">
                         <option value="Cash / Tunai">Cash / Tunai (Bendahara Sekolah)</option>
-                        <option value="Transfer Bank">Transfer Bank (BCA / Mandiri)</option>
+                        <option value="Transfer Bank">Transfer Bank (BSI / BRI / Mandiri)</option>
                         <option value="QRIS">QRIS Statis Sekolah</option>
                     </select>
+                </div>
+
+                <!-- Cash Calculator Section -->
+                <div id="modal-bayar-cash-section" class="p-3 bg-emerald-50/70 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800/60 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs font-bold text-emerald-800 dark:text-emerald-300">Uang Tunai Diterima (Rp)</label>
+                        <span class="text-[10px] text-emerald-600 font-semibold cursor-pointer hover:underline" onclick="setCashExact()">[Uang Pas]</span>
+                    </div>
+                    <input type="number" id="modal-bayar-cash-received" oninput="calculateCashChange()" placeholder="Masukkan uang tunai santri" class="w-full p-2 bg-white dark:bg-slate-700 border border-emerald-300 dark:border-emerald-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-emerald-500">
+                    <div class="flex space-x-1.5 pt-1">
+                        <button type="button" onclick="addCashShortcut(50000)" class="px-2 py-0.5 bg-white dark:bg-slate-800 hover:bg-emerald-100 text-slate-700 dark:text-slate-200 text-[10px] font-bold rounded border border-emerald-300 dark:border-emerald-700">+50rb</button>
+                        <button type="button" onclick="addCashShortcut(100000)" class="px-2 py-0.5 bg-white dark:bg-slate-800 hover:bg-emerald-100 text-slate-700 dark:text-slate-200 text-[10px] font-bold rounded border border-emerald-300 dark:border-emerald-700">+100rb</button>
+                        <button type="button" onclick="addCashShortcut(200000)" class="px-2 py-0.5 bg-white dark:bg-slate-800 hover:bg-emerald-100 text-slate-700 dark:text-slate-200 text-[10px] font-bold rounded border border-emerald-300 dark:border-emerald-700">+200rb</button>
+                    </div>
+                    <div class="pt-2 border-t border-emerald-200 dark:border-emerald-800/60 flex justify-between items-center">
+                        <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Uang Kembalian:</span>
+                        <span class="text-base font-black text-emerald-700 dark:text-emerald-300" id="modal-bayar-cash-change">Rp 0</span>
+                    </div>
+                </div>
+
+                <!-- Transfer Details Section (Hidden by default) -->
+                <div id="modal-bayar-transfer-section" class="p-3 bg-blue-50/70 dark:bg-blue-950/30 rounded-xl border border-blue-200 dark:border-blue-800/60 space-y-2 hidden">
+                    <div>
+                        <label class="block text-xs font-bold text-blue-800 dark:text-blue-300 mb-1">Bank Tujuan / Nomor Referensi Transfer</label>
+                        <input type="text" id="modal-bayar-bank-ref" placeholder="Contoh: BSI - Ref: 987654321" class="w-full p-2 bg-white dark:bg-slate-700 border border-blue-300 dark:border-blue-700 rounded-lg text-xs outline-none">
+                    </div>
                 </div>
 
                 <div>
@@ -1473,6 +1529,117 @@ function respondOutput(obj, callback) {
         </div>
     </div>
 
+
+    <!-- MODAL REKONSILIASI KAS HARIAN -->
+    <div id="modal-rekonsiliasi-kas" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-2xl shadow-2xl max-w-2xl w-full p-6 relative border border-slate-200 dark:border-slate-700 overflow-y-auto max-h-[92vh]">
+            <!-- Header -->
+            <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-200 dark:border-slate-700">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg shadow-sm">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Rekonsiliasi Kas & Tutup Kasir Harian</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Pencocokan Kas Fisik (Cash on Hand) vs Penerimaan Sistem</p>
+                    </div>
+                </div>
+                <button onclick="closeModalRekonsiliasiKas()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl font-bold p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Tanggal & Kasir Selector -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                <div>
+                    <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Tanggal Rekonsiliasi</label>
+                    <input type="date" id="rekon-tanggal" onchange="hitungRekonsiliasiKas()" class="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold outline-none focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Petugas / Bendahara</label>
+                    <input type="text" id="rekon-petugas" readonly class="w-full p-2.5 bg-slate-100 dark:bg-slate-700/60 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 outline-none">
+                </div>
+            </div>
+
+            <!-- Ringkasan Sistem (Card Metrics) -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+                <div class="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl">
+                    <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 block mb-0.5">KAS TUNAI SISTEM</span>
+                    <span id="rekon-sistem-tunai" class="text-sm font-black text-emerald-900 dark:text-emerald-200 font-mono">Rp 0</span>
+                    <span id="rekon-sistem-tunai-count" class="text-[10px] text-emerald-700 dark:text-emerald-400 block mt-0.5">0 Transaksi</span>
+                </div>
+                <div class="p-3 bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 rounded-xl">
+                    <span class="text-[10px] font-bold text-sky-600 dark:text-sky-400 block mb-0.5">TRANSFER / QRIS</span>
+                    <span id="rekon-sistem-transfer" class="text-sm font-black text-sky-900 dark:text-sky-200 font-mono">Rp 0</span>
+                    <span id="rekon-sistem-transfer-count" class="text-[10px] text-sky-700 dark:text-sky-400 block mt-0.5">0 Transaksi</span>
+                </div>
+                <div class="p-3 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-xl">
+                    <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 block mb-0.5">TOTAL PENERIMAAN</span>
+                    <span id="rekon-sistem-total" class="text-sm font-black text-indigo-900 dark:text-indigo-200 font-mono">Rp 0</span>
+                    <span id="rekon-sistem-total-count" class="text-[10px] text-indigo-700 dark:text-indigo-400 block mt-0.5">0 Transaksi</span>
+                </div>
+                <div class="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl">
+                    <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400 block mb-0.5">TRANSAKSI VOID</span>
+                    <span id="rekon-sistem-void" class="text-sm font-black text-rose-900 dark:text-rose-200 font-mono">Rp 0</span>
+                    <span id="rekon-sistem-void-count" class="text-[10px] text-rose-700 dark:text-rose-400 block mt-0.5">0 Batal</span>
+                </div>
+            </div>
+
+            <!-- Input Uang Fisik Aktual di Brankas -->
+            <div class="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border border-slate-200 dark:border-slate-700 mb-5">
+                <label class="text-xs font-bold text-slate-800 dark:text-slate-100 block mb-1">
+                    <i class="fa-solid fa-money-bill-wave text-emerald-500 mr-1.5"></i>Uang Kas Fisik Aktual (Cash On Hand)
+                </label>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-2">Hitung seluruh uang tunai yang ada di laci kasir / brankas sekolah saat penutupan:</p>
+                
+                <div class="relative mb-3">
+                    <span class="absolute left-3.5 top-2.5 font-bold text-slate-400 text-sm">Rp</span>
+                    <input type="number" id="rekon-kas-fisik" oninput="hitungRekonsiliasiKas()" placeholder="0" min="0" step="1000" class="w-full pl-12 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl text-base font-black font-mono outline-none focus:border-brand-500">
+                </div>
+
+                <!-- Shortcut Denominasi Cepat -->
+                <div class="flex flex-wrap gap-1.5 mb-2">
+                    <span class="text-[10px] text-slate-400 self-center mr-1 font-medium">Bantu Hitung:</span>
+                    <button type="button" onclick="tambahKasFisik(100000)" class="px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded text-[10px] font-bold hover:bg-slate-100 dark:hover:bg-slate-700">+100.000</button>
+                    <button type="button" onclick="tambahKasFisik(50000)" class="px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded text-[10px] font-bold hover:bg-slate-100 dark:hover:bg-slate-700">+50.000</button>
+                    <button type="button" onclick="tambahKasFisik(20000)" class="px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded text-[10px] font-bold hover:bg-slate-100 dark:hover:bg-slate-700">+20.000</button>
+                    <button type="button" onclick="tambahKasFisik(10000)" class="px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded text-[10px] font-bold hover:bg-slate-100 dark:hover:bg-slate-700">+10.000</button>
+                    <button type="button" onclick="resetKasFisik()" class="px-2 py-1 bg-rose-50 dark:bg-rose-950/40 text-rose-600 border border-rose-200 dark:border-rose-800 rounded text-[10px] font-bold hover:bg-rose-100">Reset 0</button>
+                </div>
+
+                <!-- Live Status Selisih Kas -->
+                <div id="rekon-selisih-box" class="p-3 rounded-xl border flex items-center justify-between bg-emerald-50 border-emerald-200 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-200">
+                    <div class="flex items-center gap-2">
+                        <i id="rekon-selisih-icon" class="fa-solid fa-circle-check text-base text-emerald-600"></i>
+                        <span id="rekon-selisih-label" class="text-xs font-bold">KAS SEIMBANG (MATCH)</span>
+                    </div>
+                    <span id="rekon-selisih-val" class="text-xs font-black font-mono">Selisih: Rp 0</span>
+                </div>
+            </div>
+
+            <!-- Catatan Berita Acara -->
+            <div class="mb-5">
+                <label class="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">Catatan Kasir / Keterangan Penutupan Buku</label>
+                <textarea id="rekon-catatan" rows="2" placeholder="Tuliskan keterangan jika ada selisih kas, uang pecahan kecil, atau catatan penting lainnya..." class="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-xs outline-none focus:border-brand-500"></textarea>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex flex-col sm:flex-row justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-700">
+                <button type="button" onclick="closeModalRekonsiliasiKas()" class="py-2.5 px-4 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition">
+                    Tutup
+                </button>
+                <button type="button" onclick="cetakBeritaAcaraKas()" class="py-2.5 px-4 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-print"></i>
+                    <span>Cetak Berita Acara A4</span>
+                </button>
+                <button type="button" onclick="simpanRekonsiliasiKas()" class="py-2.5 px-5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span>Simpan Rekonsiliasi</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         /* ====================================================================
          * CLIENT STATE STORE & INITIAL MOCK DATABASE
@@ -1535,7 +1702,382 @@ function respondOutput(obj, callback) {
             syncFullStateToCloud();
         }
 
+
+        /* ====================================================================
+         * REKONSILIASI KAS HARIAN (CASH RECONCILIATION & CASHIER DRAWER)
+         * ==================================================================== */
+        function openModalRekonsiliasiKas() {
+            const modal = document.getElementById('modal-rekonsiliasi-kas');
+            if (!modal) return;
+            
+            const today = new Date().toISOString().split('T')[0];
+            const tglInput = document.getElementById('rekon-tanggal');
+            if (tglInput) tglInput.value = today;
+
+            const petugasInput = document.getElementById('rekon-petugas');
+            if (petugasInput) {
+                const currentUser = state.activeUser || (state.schoolInfo ? state.schoolInfo.bendahara : 'Bendahara');
+                petugasInput.value = currentUser;
+            }
+
+            const fisikInput = document.getElementById('rekon-kas-fisik');
+            if (fisikInput) fisikInput.value = '';
+
+            const catatanInput = document.getElementById('rekon-catatan');
+            if (catatanInput) catatanInput.value = '';
+
+            modal.classList.remove('hidden');
+            hitungRekonsiliasiKas();
+        }
+
+        function closeModalRekonsiliasiKas() {
+            const modal = document.getElementById('modal-rekonsiliasi-kas');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function tambahKasFisik(amount) {
+            const fisikInput = document.getElementById('rekon-kas-fisik');
+            if (!fisikInput) return;
+            const current = Number(fisikInput.value) || 0;
+            fisikInput.value = current + amount;
+            hitungRekonsiliasiKas();
+        }
+
+        function resetKasFisik() {
+            const fisikInput = document.getElementById('rekon-kas-fisik');
+            if (fisikInput) {
+                fisikInput.value = 0;
+                hitungRekonsiliasiKas();
+            }
+        }
+
+        function hitungRekonsiliasiKas() {
+            const tgl = document.getElementById('rekon-tanggal').value;
+            const transactions = state.transactions || [];
+
+            let tunaiTotal = 0;
+            let tunaiCount = 0;
+            let transferTotal = 0;
+            let transferCount = 0;
+            let voidTotal = 0;
+            let voidCount = 0;
+
+            transactions.forEach(t => {
+                if (t.tanggal === tgl) {
+                    const isVoid = t.status === 'VOID';
+                    const nom = Number(t.nominal) || 0;
+                    const metode = (t.metode || 'Tunai').trim().toLowerCase();
+
+                    if (isVoid) {
+                        voidTotal += nom;
+                        voidCount += 1;
+                    } else if (metode === 'tunai' || metode === 'cash' || !metode) {
+                        tunaiTotal += nom;
+                        tunaiCount += 1;
+                    } else {
+                        transferTotal += nom;
+                        transferCount += 1;
+                    }
+                }
+            });
+
+            const grandTotal = tunaiTotal + transferTotal;
+            const grandCount = tunaiCount + transferCount;
+
+            document.getElementById('rekon-sistem-tunai').textContent = 'Rp ' + tunaiTotal.toLocaleString('id-ID');
+            document.getElementById('rekon-sistem-tunai-count').textContent = tunaiCount + ' Transaksi';
+
+            document.getElementById('rekon-sistem-transfer').textContent = 'Rp ' + transferTotal.toLocaleString('id-ID');
+            document.getElementById('rekon-sistem-transfer-count').textContent = transferCount + ' Transaksi';
+
+            document.getElementById('rekon-sistem-total').textContent = 'Rp ' + grandTotal.toLocaleString('id-ID');
+            document.getElementById('rekon-sistem-total-count').textContent = grandCount + ' Transaksi';
+
+            document.getElementById('rekon-sistem-void').textContent = 'Rp ' + voidTotal.toLocaleString('id-ID');
+            document.getElementById('rekon-sistem-void-count').textContent = voidCount + ' Batal';
+
+            // Hitung Selisih dengan Kas Fisik
+            const fisikInput = document.getElementById('rekon-kas-fisik');
+            const kasFisik = Number(fisikInput ? fisikInput.value : 0);
+            const selisih = kasFisik - tunaiTotal;
+
+            const box = document.getElementById('rekon-selisih-box');
+            const icon = document.getElementById('rekon-selisih-icon');
+            const label = document.getElementById('rekon-selisih-label');
+            const val = document.getElementById('rekon-selisih-val');
+
+            box.className = 'p-3 rounded-xl border flex items-center justify-between ';
+            if (kasFisik === 0 && tunaiTotal > 0 && (!fisikInput || !fisikInput.value)) {
+                box.className += 'bg-slate-100 border-slate-200 text-slate-700 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200';
+                icon.className = 'fa-solid fa-info-circle text-slate-400';
+                label.textContent = 'BELUM DIHITUNG';
+                val.textContent = 'Menunggu input kas fisik';
+            } else if (selisih === 0) {
+                box.className += 'bg-emerald-50 border-emerald-200 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-200';
+                icon.className = 'fa-solid fa-circle-check text-emerald-600';
+                label.textContent = 'KAS SEIMBANG (MATCH)';
+                val.textContent = 'Selisih: Rp 0';
+            } else if (selisih > 0) {
+                box.className += 'bg-sky-50 border-sky-200 text-sky-900 dark:bg-sky-950/40 dark:border-sky-800 dark:text-sky-200';
+                icon.className = 'fa-solid fa-arrow-trend-up text-sky-600';
+                label.textContent = 'SELISIH LEBIH (SURPLUS)';
+                val.textContent = '+Rp ' + selisih.toLocaleString('id-ID');
+            } else {
+                box.className += 'bg-rose-50 border-rose-200 text-rose-900 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-200';
+                icon.className = 'fa-solid fa-arrow-trend-down text-rose-600';
+                label.textContent = 'SELISIH KURANG (DEFISIT)';
+                val.textContent = '-Rp ' + Math.abs(selisih).toLocaleString('id-ID');
+            }
+        }
+
+        function simpanRekonsiliasiKas() {
+            const tgl = document.getElementById('rekon-tanggal').value;
+            const petugas = document.getElementById('rekon-petugas').value;
+            const kasFisik = Number(document.getElementById('rekon-kas-fisik').value) || 0;
+            const catatan = document.getElementById('rekon-catatan').value.trim();
+
+            const tunaiEl = document.getElementById('rekon-sistem-tunai').textContent;
+            const tunaiTotal = Number(tunaiEl.replace(/[^0-9]/g, '')) || 0;
+            const selisih = kasFisik - tunaiTotal;
+
+            if (!state.cashReconciliations) state.cashReconciliations = [];
+
+            const rekonRecord = {
+                id: 'REC-' + Date.now(),
+                tanggal: tgl,
+                petugas: petugas,
+                kasSistemTunai: tunaiTotal,
+                kasFisikAktual: kasFisik,
+                selisih: selisih,
+                status: selisih === 0 ? 'BALANCE' : (selisih > 0 ? 'SURPLUS' : 'DEFICIT'),
+                catatan: catatan,
+                timestamp: new Date().toISOString()
+            };
+
+            state.cashReconciliations.push(rekonRecord);
+            logAudit('REKONSILIASI_KAS', `Penutupan kas tanggal ${tgl}: Fisik Rp ${kasFisik.toLocaleString('id-ID')} vs Sistem Rp ${tunaiTotal.toLocaleString('id-ID')} (Selisih: Rp ${selisih.toLocaleString('id-ID')})`);
+            saveState();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Rekonsiliasi Tersimpan',
+                text: `Berita Acara Penutupan Kas tanggal ${tgl} berhasil disimpan ke pangkalan data.`,
+                confirmButtonColor: '#0284c7'
+            });
+
+            closeModalRekonsiliasiKas();
+        }
+
+        function cetakBeritaAcaraKas() {
+            const tgl = document.getElementById('rekon-tanggal').value;
+            const petugas = document.getElementById('rekon-petugas').value || 'Bendahara Sekolah';
+            const kasFisik = Number(document.getElementById('rekon-kas-fisik').value) || 0;
+            const catatan = document.getElementById('rekon-catatan').value.trim() || 'Tidak ada catatan khusus.';
+
+            const tunaiText = document.getElementById('rekon-sistem-tunai').textContent;
+            const transferText = document.getElementById('rekon-sistem-transfer').textContent;
+            const totalText = document.getElementById('rekon-sistem-total').textContent;
+            const voidText = document.getElementById('rekon-sistem-void').textContent;
+
+            const tunaiTotal = Number(tunaiText.replace(/[^0-9]/g, '')) || 0;
+            const selisih = kasFisik - tunaiTotal;
+
+            const printWin = window.open('', '_blank');
+            const schoolName = (state.schoolInfo && state.schoolInfo.nama) ? state.schoolInfo.nama : 'SMP MQ AL HUDA';
+            const schoolAlamat = (state.schoolInfo && state.schoolInfo.alamat) ? state.schoolInfo.alamat : 'Jl. Binangun No. 17';
+            const kepsek = (state.schoolInfo && state.schoolInfo.kepsek) ? state.schoolInfo.kepsek : 'Kepala Sekolah';
+
+            printWin.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Berita Acara Rekonsiliasi Kas Harian - ${tgl}</title>
+                    <style>
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 30px; color: #1e293b; }
+                        .kop { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 20px; }
+                        .kop h2 { margin: 0; font-size: 18pt; text-transform: uppercase; }
+                        .kop p { margin: 2px 0 0; font-size: 10pt; color: #64748b; }
+                        .title { text-align: center; font-size: 13pt; font-weight: bold; margin-bottom: 15px; text-decoration: underline; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10.5pt; }
+                        table, th, td { border: 1px solid #cbd5e1; }
+                        th { background-color: #f1f5f9; padding: 8px 10px; text-align: left; }
+                        td { padding: 8px 10px; }
+                        .total-row { font-weight: bold; background-color: #f8fafc; }
+                        .status-box { padding: 10px; border-radius: 6px; font-weight: bold; margin-bottom: 20px; font-size: 11pt; text-align: center; }
+                        .match { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+                        .diff { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+                        .sig-grid { display: flex; justify-content: space-between; margin-top: 40px; }
+                        .sig-col { text-align: center; width: 40%; }
+                        .sig-space { height: 75px; }
+                        @media print {
+                            body { margin: 15mm; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="kop">
+                        <h2>${schoolName}</h2>
+                        <p>${schoolAlamat}</p>
+                    </div>
+
+                    <div class="title">BERITA ACARA REKONSILIASI KAS & TUTUP KASIR HARIAN</div>
+                    <p style="font-size: 10.5pt; margin-bottom: 15px;">
+                        Pada hari ini, tanggal <b>${formatTanggalIndo(tgl)}</b>, telah dilakukan pencocokan kas fisik penerimaan pembayaran santri dengan catatan sistem administrasi keuangan sekolah:
+                    </p>
+
+                    <table>
+                        <tr>
+                            <th style="width: 60%;">Uraian Rekonsiliasi</th>
+                            <th style="width: 40%; text-align: right;">Jumlah / Nominal</th>
+                        </tr>
+                        <tr>
+                            <td>1. Total Penerimaan Kas Sistem (Tunai)</td>
+                            <td style="text-align: right; font-weight: bold;">${tunaiText}</td>
+                        </tr>
+                        <tr>
+                            <td>2. Total Penerimaan Non-Tunai (Transfer Bank / QRIS)</td>
+                            <td style="text-align: right;">${transferText}</td>
+                        </tr>
+                        <tr class="total-row">
+                            <td>Total Seluruh Transaksi Sah Hari Ini</td>
+                            <td style="text-align: right;">${totalText}</td>
+                        </tr>
+                        <tr>
+                            <td style="color: #64748b;">(Transaksi Batal / VOID)</td>
+                            <td style="text-align: right; color: #64748b;">${voidText}</td>
+                        </tr>
+                        <tr style="background: #fdf2f8; font-weight: bold;">
+                            <td>3. Jumlah Uang Tunai Fisik Aktual (Cash on Hand)</td>
+                            <td style="text-align: right; font-size: 11pt; color: #0284c7;">Rp ${kasFisik.toLocaleString('id-ID')}</td>
+                        </tr>
+                        <tr style="font-weight: bold;">
+                            <td>4. Selisih Kas (Fisik - Sistem Tunai)</td>
+                            <td style="text-align: right; font-size: 11pt; color: ${selisih === 0 ? '#16a34a' : (selisih > 0 ? '#0284c7' : '#dc2626')};">
+                                ${selisih === 0 ? 'Rp 0 (SEIMBANG)' : (selisih > 0 ? '+Rp ' + selisih.toLocaleString('id-ID') + ' (LEBIH)' : '-Rp ' + Math.abs(selisih).toLocaleString('id-ID') + ' (KURANG)')}
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div class="status-box ${selisih === 0 ? 'match' : 'diff'}">
+                        STATUS PENUTUPAN KAS: ${selisih === 0 ? 'MATCH / SEIMBANG (TIDAK ADA SELISIH)' : (selisih > 0 ? 'SURPLUS / SELISIH LEBIH KAS FISIK' : 'DEFISIT / SELISIH KURANG KAS FISIK')}
+                    </div>
+
+                    <div style="font-size: 10pt; margin-bottom: 25px;">
+                        <b>Keterangan / Catatan Penutupan:</b><br>
+                        ${catatan}
+                    </div>
+
+                    <div class="sig-grid">
+                        <div class="sig-col">
+                            Mengetahui,<br>
+                            Kepala Sekolah
+                            <div class="sig-space"></div>
+                            <b>${kepsek}</b>
+                        </div>
+                        <div class="sig-col">
+                            Binangun, ${formatTanggalIndo(tgl)}<br>
+                            Petugas Kasir / Bendahara
+                            <div class="sig-space"></div>
+                            <b>${petugas}</b>
+                        </div>
+                    </div>
+
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                        }
+                    </script>
+                </body>
+                </html>
+            `);
+            printWin.document.close();
+        }
+
+        /* CEK VERIFIKASI PUBLIK RESMI (QR CODE SCAN) */
+        function checkPublicVerification() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const receiptNo = urlParams.get('verify');
+            if (!receiptNo) return false;
+
+            const loginScreen = document.getElementById('view-login-screen');
+            if (loginScreen) loginScreen.classList.add('hidden');
+            document.querySelectorAll('.app-view').forEach(v => v.classList.add('hidden'));
+
+            const verifyScreen = document.getElementById('view-verify-screen');
+            const resultContainer = document.getElementById('verify-result-content');
+            if (!verifyScreen || !resultContainer) return false;
+
+            verifyScreen.classList.remove('hidden');
+
+            const trx = (state.transactions || []).find(t => t.kwitansiNo.toUpperCase() === receiptNo.trim().toUpperCase());
+            if (trx) {
+                const isVoid = trx.status === 'VOID';
+                resultContainer.innerHTML = `
+                    <div class="p-4 ${isVoid ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 text-rose-900 dark:text-rose-200' : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 text-emerald-900 dark:text-emerald-200'} rounded-2xl border mb-4 text-center">
+                        <i class="fa-solid ${isVoid ? 'fa-circle-xmark text-rose-600' : 'fa-circle-check text-emerald-600'} text-4xl mb-2 block"></i>
+                        <h3 class="font-extrabold text-base">${isVoid ? 'KWITANSI DIBATALKAN (STATUS: VOID)' : 'KWITANSI RESMI TERDAFTAR'}</h3>
+                        <p class="text-xs ${isVoid ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'} mt-0.5">Pangkalan Data Pembayaran SMP MQ Al Huda Binangun</p>
+                    </div>
+
+                    <div class="space-y-2.5 text-xs bg-slate-50 dark:bg-slate-700/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+                        <div class="flex justify-between pb-2 border-b border-slate-200 dark:border-slate-600">
+                            <span class="text-slate-500">Nomor Kwitansi:</span>
+                            <span class="font-mono font-bold text-slate-800 dark:text-slate-100">${trx.kwitansiNo}</span>
+                        </div>
+                        <div class="flex justify-between pb-2 border-b border-slate-200 dark:border-slate-600">
+                            <span class="text-slate-500">Nama Santri:</span>
+                            <span class="font-bold text-slate-800 dark:text-slate-100">${trx.namaSiswa} (NIS: ${trx.nis})</span>
+                        </div>
+                        <div class="flex justify-between pb-2 border-b border-slate-200 dark:border-slate-600">
+                            <span class="text-slate-500">Uraian Pos:</span>
+                            <span class="font-semibold text-slate-800 dark:text-slate-100">${trx.posNama}</span>
+                        </div>
+                        <div class="flex justify-between pb-2 border-b border-slate-200 dark:border-slate-600">
+                            <span class="text-slate-500">Total Nominal:</span>
+                            <span class="font-black text-emerald-600 text-sm">Rp ${Number(trx.nominal).toLocaleString('id-ID')}</span>
+                        </div>
+                        <div class="flex justify-between pb-2 border-b border-slate-200 dark:border-slate-600">
+                            <span class="text-slate-500">Metode Bayar:</span>
+                            <span class="font-medium text-slate-700 dark:text-slate-200">${trx.metode || 'Tunai'}</span>
+                        </div>
+                        <div class="flex justify-between pb-2 border-b border-slate-200 dark:border-slate-600">
+                            <span class="text-slate-500">Tanggal:</span>
+                            <span class="font-medium text-slate-700 dark:text-slate-200">${formatTanggalIndo(trx.tanggal)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Petugas Bendahara:</span>
+                            <span class="font-bold text-slate-800 dark:text-slate-100">${trx.petugas || 'Bendahara'}</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                resultContainer.innerHTML = `
+                    <div class="p-6 bg-rose-50 dark:bg-rose-950/40 rounded-2xl border border-rose-200 dark:border-rose-800 text-center">
+                        <i class="fa-solid fa-triangle-exclamation text-rose-600 text-4xl mb-2 block"></i>
+                        <h3 class="font-bold text-base text-rose-900 dark:text-rose-200">Kwitansi Tidak Ditemukan</h3>
+                        <p class="text-xs text-rose-700 dark:text-rose-300 mt-1">Nomor kwitansi <b>${receiptNo}</b> tidak ditemukan pada catatan sistem sekolah.</p>
+                        <p class="text-[11px] text-slate-400 mt-3">Pastikan Anda telah menyinkronkan data atau memeriksa dokumen kwitansi fisik.</p>
+                    </div>
+                `;
+            }
+            return true;
+        }
+
+        // Shortcut Keyboard Global: Ctrl + K untuk Pencarian Cepat Santri
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                showView('transaksi');
+                const searchInput = document.getElementById('search-student-input');
+                if (searchInput) {
+                    searchInput.focus();
+                    searchInput.select();
+                }
+            }
+        });
+
         window.onload = function() {
+            if (checkPublicVerification()) return;
             const hasCleanReset = localStorage.getItem(DB_RESET_KEY);
             if (!hasCleanReset) {
                 // Eksekusi pembersihan total satu kali untuk membuang seluruh data dummy di browser ini
@@ -1868,6 +2410,16 @@ function respondOutput(obj, callback) {
 
         /* NAVIGATION & ROLE CONTROLLER */
         function showView(viewId) {
+            // Guard: Proteksi akses menu wali murid
+            if (state.activeRole === 'walimurid' && viewId !== 'portal-wali') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Akses Terbatas',
+                    text: 'Akun Wali Murid hanya berwenang melihat tagihan dan histori santri yang bersangkutan.',
+                    confirmButtonColor: '#0284c7'
+                });
+                viewId = 'portal-wali';
+            }
             document.querySelectorAll('.app-view').forEach(v => v.classList.add('hidden'));
             document.getElementById(`view-${viewId}`).classList.remove('hidden');
 
@@ -2286,24 +2838,37 @@ function respondOutput(obj, callback) {
                 `;
             }).join('');
 
-            // Render History Table for Student
-            const stTrx = state.transactions.filter(t => t.nis === nis);
+            // Render History Table for Student dengan Dukungan VOID & Reversal
+            const stTrx = (state.transactions || []).filter(t => t.nis === nis);
             const historyTb = document.getElementById('trx-student-history-table');
-            historyTb.innerHTML = stTrx.map(t => `
-                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40">
-                    <td class="p-3 font-mono font-bold text-brand-600 dark:text-brand-400">${t.kwitansiNo}</td>
+            const isStaff = state.activeRole === 'superadmin' || state.activeRole === 'admin' || state.activeRole === 'bendahara';
+
+            historyTb.innerHTML = stTrx.map(t => {
+                const isVoid = t.status === 'VOID';
+                return `
+                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 ${isVoid ? 'opacity-60 bg-rose-50/40 dark:bg-rose-950/20' : ''}">
+                    <td class="p-3 font-mono font-bold ${isVoid ? 'line-through text-rose-500' : 'text-brand-600 dark:text-brand-400'}">
+                        ${t.kwitansiNo}
+                        ${isVoid ? '<span class="block text-[9px] text-rose-600 font-bold uppercase tracking-wider">BATAL / VOID</span>' : ''}
+                    </td>
                     <td class="p-3">${t.tanggal}</td>
                     <td class="p-3 font-semibold text-slate-800 dark:text-slate-100">${t.posNama}</td>
-                    <td class="p-3 font-bold text-emerald-600">Rp ${t.nominal.toLocaleString('id-ID')}</td>
-                    <td class="p-3">${t.metode}</td>
-                    <td class="p-3">${t.petugas}</td>
-                    <td class="p-3 text-right">
-                        <button onclick="reprintKwitansi('${t.kwitansiNo}')" class="px-2 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded text-[11px] font-semibold">
+                    <td class="p-3 font-bold ${isVoid ? 'line-through text-rose-400' : 'text-emerald-600'}">Rp ${t.nominal.toLocaleString('id-ID')}</td>
+                    <td class="p-3">${t.metode || 'Tunai'}</td>
+                    <td class="p-3">${t.petugas || 'Bendahara'}</td>
+                    <td class="p-3 text-right space-x-1">
+                        <button onclick="reprintKwitansi('${t.kwitansiNo}')" class="px-2 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded text-[11px] font-semibold" title="Cetak Kwitansi">
                             <i class="fa-solid fa-print"></i> Kwitansi
                         </button>
+                        ${(!isVoid && isStaff) ? `
+                        <button onclick="confirmVoidTransaction('${t.kwitansiNo}')" class="px-2 py-1 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded text-[11px] font-semibold" title="Batalkan Kwitansi (VOID)">
+                            <i class="fa-solid fa-ban"></i> Void
+                        </button>
+                        ` : ''}
                     </td>
                 </tr>
-            `).join('');
+                `;
+            }).join('');
         }
 
         /* MODAL BAYAR LOGIC */
@@ -2381,6 +2946,68 @@ function respondOutput(obj, callback) {
             document.getElementById('modal-bayar').classList.add('hidden');
         }
 
+
+        /* CASH CALCULATOR & HELPER METODE BAYAR */
+        function toggleMetodeBayarFields() {
+            const metode = document.getElementById('modal-bayar-metode').value;
+            const cashSec = document.getElementById('modal-bayar-cash-section');
+            const tfSec = document.getElementById('modal-bayar-transfer-section');
+            if (metode === 'Cash / Tunai') {
+                if (cashSec) cashSec.classList.remove('hidden');
+                if (tfSec) tfSec.classList.add('hidden');
+            } else {
+                if (cashSec) cashSec.classList.add('hidden');
+                if (tfSec) tfSec.classList.remove('hidden');
+            }
+            calculateCashChange();
+        }
+
+        function calculateCashChange() {
+            const nominal = parseInt(document.getElementById('modal-bayar-nominal').value) || 0;
+            const terbilangEl = document.getElementById('modal-bayar-terbilang-preview');
+            if (terbilangEl) {
+                terbilangEl.innerText = nominal > 0 ? `# ${terbilangRupiah(nominal)} Rupiah #` : '# Nol Rupiah #';
+            }
+
+            const metode = document.getElementById('modal-bayar-metode') ? document.getElementById('modal-bayar-metode').value : 'Cash / Tunai';
+            if (metode === 'Cash / Tunai') {
+                const receivedInput = document.getElementById('modal-bayar-cash-received');
+                const changeEl = document.getElementById('modal-bayar-cash-change');
+                if (!receivedInput || !changeEl) return;
+                
+                const received = parseInt(receivedInput.value) || 0;
+                const change = received - nominal;
+                if (received === 0 && nominal === 0) {
+                    changeEl.innerText = 'Rp 0';
+                    changeEl.className = 'text-base font-black text-slate-500';
+                } else if (change >= 0) {
+                    changeEl.innerText = `Rp ${change.toLocaleString('id-ID')}`;
+                    changeEl.className = 'text-base font-black text-emerald-600 dark:text-emerald-400';
+                } else {
+                    changeEl.innerText = `Kurang Rp ${Math.abs(change).toLocaleString('id-ID')}`;
+                    changeEl.className = 'text-base font-black text-rose-600 dark:text-rose-400';
+                }
+            }
+        }
+
+        function setCashExact() {
+            const nominal = parseInt(document.getElementById('modal-bayar-nominal').value) || 0;
+            const receivedInput = document.getElementById('modal-bayar-cash-received');
+            if (receivedInput) {
+                receivedInput.value = nominal;
+                calculateCashChange();
+            }
+        }
+
+        function addCashShortcut(amt) {
+            const receivedInput = document.getElementById('modal-bayar-cash-received');
+            if (receivedInput) {
+                const cur = parseInt(receivedInput.value) || 0;
+                receivedInput.value = cur + amt;
+                calculateCashChange();
+            }
+        }
+
         function executePaymentSubmit(e) {
             e.preventDefault();
             const billId = document.getElementById('modal-bayar-id-tagihan').value;
@@ -2392,65 +3019,234 @@ function respondOutput(obj, callback) {
             const bill = state.bills.find(b => b.id === billId);
             const st = state.students.find(s => s.nis === nis);
 
-            if(nominalPay <= 0) {
-                Swal.fire('Error', 'Nominal pembayaran tidak valid!', 'error');
+            if (!bill || !st) {
+                Swal.fire('Error', 'Data tagihan atau santri tidak ditemukan!', 'error');
                 return;
             }
 
-            // Update bill status
-            bill.dibayar += nominalPay;
-            if(bill.dibayar >= bill.nominal) {
-                bill.status = 'Lunas';
+            if (nominalPay <= 0) {
+                Swal.fire('Nominal Tidak Valid', 'Nominal pembayaran harus lebih besar dari Rp 0!', 'error');
+                return;
             }
 
-            // Create Kwitansi Transaction
-            const kwtNo = `KWT-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${String(state.transactions.length + 1).padStart(4,'0')}`;
+            const sisa = bill.nominal - bill.dibayar;
+            if (nominalPay > sisa) {
+                Swal.fire('Melebihi Tagihan', `Nominal pembayaran (Rp ${nominalPay.toLocaleString('id-ID')}) melebihi sisa tagihan (Rp ${sisa.toLocaleString('id-ID')}).`, 'warning');
+                return;
+            }
+
+            let uangDiterima = nominalPay;
+            let kembalian = 0;
+            let bankRef = '';
+
+            if (metode === 'Cash / Tunai') {
+                const receivedInput = document.getElementById('modal-bayar-cash-received');
+                uangDiterima = parseInt(receivedInput ? receivedInput.value : nominalPay) || 0;
+                if (uangDiterima < nominalPay) {
+                    const kurang = nominalPay - uangDiterima;
+                    Swal.fire('Uang Kurang', `Uang tunai yang diterima kurang Rp ${kurang.toLocaleString('id-ID')}.`, 'warning');
+                    return;
+                }
+                kembalian = uangDiterima - nominalPay;
+            } else if (metode === 'Transfer Bank') {
+                const bankRefInput = document.getElementById('modal-bayar-bank-ref');
+                bankRef = bankRefInput ? bankRefInput.value.trim() : '';
+            }
+
+            // Update bill status di client
+            bill.dibayar += nominalPay;
+            bill.status = bill.dibayar >= bill.nominal ? 'Lunas' : 'Cicilan';
+
+            // Generate Client Idempotency Key & Transaction ID
+            const idempotencyKey = 'IDEMP-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const todayPrefix = todayStr.replace(/-/g, '');
+            const existingTodayCount = (state.transactions || []).filter(t => t.tanggal === todayStr).length;
+            const kwtNo = `KWT-${todayPrefix}-${String(existingTodayCount + 1).padStart(4, '0')}`;
             const bendaharaName = (state.schoolInfo && state.schoolInfo.bendahara) ? state.schoolInfo.bendahara : 'Ust. Yuli';
+
             const newTrx = {
+                id: 'TRX-' + UtilitiesUUID(),
+                idempotencyKey: idempotencyKey,
                 kwitansiNo: kwtNo,
-                tanggal: new Date().toISOString().slice(0,10),
+                tanggal: todayStr,
                 nis: st.nis,
                 namaSiswa: st.nama,
                 posId: bill.posId,
                 posNama: bill.namaPos,
                 nominal: nominalPay,
                 metode: metode,
+                uangDiterima: uangDiterima,
+                kembalian: kembalian,
+                bankRef: bankRef,
                 keterangan: ket,
-                petugas: bendaharaName
+                petugas: bendaharaName,
+                status: 'SUCCESS'
             };
 
+            if (!state.transactions) state.transactions = [];
             state.transactions.unshift(newTrx);
 
             // Audit log
+            if (!state.logs) state.logs = [];
             state.logs.unshift({
                 waktu: new Date().toLocaleString('id-ID'),
-                user: document.getElementById('user-display-name').innerText,
+                user: (state.loggedInUser && state.loggedInUser.name) || bendaharaName,
                 role: state.activeRole,
                 aksi: 'PEMBAYARAN',
-                detail: `Memproses ${bill.namaPos} Rp ${nominalPay.toLocaleString('id-ID')} untuk ${st.nama}`,
-                device: 'Chrome / Web App'
+                detail: `Pembayaran ${bill.namaPos} Rp ${nominalPay.toLocaleString('id-ID')} untuk ${st.nama} (${kwtNo})`,
+                device: 'Web App'
             });
 
             closeModalBayar();
             saveState();
+
+            // Kirim ke Google Apps Script backend secara idempotent
             syncToSpreadsheet('PAYMENT', {
-                nis: newTrx.nis,
-                namaSiswa: newTrx.namaSiswa,
-                idPembayaran: newTrx.posId,
-                namaPembayaran: newTrx.posNama,
-                nominal: newTrx.nominal,
-                metode: newTrx.metode,
-                petugas: newTrx.petugas,
+                idempotencyKey: idempotencyKey,
+                billId: bill.id,
+                studentId: st.nis,
+                namaSiswa: st.nama,
+                posId: bill.posId,
+                posNama: bill.namaPos,
+                nominal: nominalPay,
+                metode: metode,
+                uangDiterima: uangDiterima,
+                kembalian: kembalian,
+                petugas: bendaharaName,
                 kwitansiNo: kwtNo,
                 keterangan: ket,
                 role: state.activeRole
             });
+
             renderDashboard();
             selectStudentForPayment(nis);
 
-            // Open printable kwitansi
+            // Buka Kwitansi Resmi dengan Real QR Code
             showKwitansiModal(newTrx, st);
         }
+
+        function UtilitiesUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        /* VOID TRANSAKSI (PEMBATALAN RESMI BERIZIN) */
+        function confirmVoidTransaction(kwitansiNo) {
+            const isAuthorized = state.activeRole === 'superadmin' || state.activeRole === 'admin' || state.activeRole === 'bendahara';
+            if (!isAuthorized) {
+                Swal.fire('Akses Ditolak', 'Hanya Bendahara atau Administrator yang berwenang membatalkan kwitansi transaksi (VOID).', 'error');
+                return;
+            }
+
+            const trx = (state.transactions || []).find(t => t.kwitansiNo === kwitansiNo);
+            if (!trx) {
+                Swal.fire('Error', 'Data transaksi tidak ditemukan!', 'error');
+                return;
+            }
+
+            if (trx.status === 'VOID') {
+                Swal.fire('Informasi', 'Transaksi ini sudah berstatus BATAL / VOID sebelumnya.', 'info');
+                return;
+            }
+
+            Swal.fire({
+                title: 'BATALKAN TRANSAKSI (VOID)?',
+                html: `
+                    <div class="text-left text-xs space-y-3">
+                        <div class="p-3 bg-rose-50 dark:bg-rose-950/40 rounded-xl border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200">
+                            <p class="font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Perhatian Penting:</p>
+                            <p class="mt-1">Kwitansi <b>${trx.kwitansiNo}</b> (Rp ${Number(trx.nominal).toLocaleString('id-ID')}) milik <b>${trx.namaSiswa}</b> akan dibatalkan.</p>
+                            <p class="mt-0.5 font-semibold text-rose-700 dark:text-rose-300">Saldo tagihan siswa akan otomatis dipulihkan (reversal).</p>
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Alasan Pembatalan (Wajib):</label>
+                            <input id="swal-void-reason" class="swal2-input !m-0 !w-full text-xs" placeholder="Contoh: Salah pilih santri / Salah nominal">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Konfirmasi Sandi Admin / Bendahara:</label>
+                            <input id="swal-void-password" type="password" class="swal2-input !m-0 !w-full text-xs" placeholder="Password Admin">
+                        </div>
+                    </div>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e11d48',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Batalkan Kwitansi (VOID)',
+                cancelButtonText: 'Batal',
+                preConfirm: () => {
+                    const reason = document.getElementById('swal-void-reason').value.trim();
+                    const password = document.getElementById('swal-void-password').value;
+                    if (!reason) {
+                        Swal.showValidationMessage('Alasan pembatalan wajib diisi dengan jelas.');
+                        return false;
+                    }
+                    if (password !== 'admin' && password !== 'admin123' && password !== 'bendahara') {
+                        Swal.showValidationMessage('Password konfirmasi tidak cocok.');
+                        return false;
+                    }
+                    return { reason };
+                }
+            }).then((res) => {
+                if (res.isConfirmed && res.value) {
+                    executeVoidTransaction(trx, res.value.reason);
+                }
+            });
+        }
+
+        function executeVoidTransaction(trx, reason) {
+            trx.status = 'VOID';
+            trx.voidReason = reason;
+            trx.voidDate = new Date().toISOString();
+            trx.voidUser = (state.loggedInUser && state.loggedInUser.name) || 'Bendahara';
+
+            // Pulihkan saldo tagihan siswa (Reversal)
+            const bill = (state.bills || []).find(b => b.nis === trx.nis && (b.namaPos === trx.posNama || b.posId === trx.posId));
+            if (bill) {
+                bill.dibayar = Math.max(0, (Number(bill.dibayar) || 0) - Number(trx.nominal));
+                bill.status = bill.dibayar >= bill.nominal ? 'Lunas' : (bill.dibayar > 0 ? 'Cicilan' : 'Belum Lunas');
+            }
+
+            // Catat audit log
+            if (!state.logs) state.logs = [];
+            state.logs.unshift({
+                waktu: new Date().toLocaleString('id-ID'),
+                user: (state.loggedInUser && state.loggedInUser.name) || 'Bendahara',
+                role: state.activeRole,
+                aksi: 'VOID TRANSAKSI',
+                detail: `Membatalkan kwitansi ${trx.kwitansiNo} Rp ${Number(trx.nominal).toLocaleString('id-ID')} santri ${trx.namaSiswa}. Alasan: ${reason}`,
+                device: 'Web App'
+            });
+
+            saveState();
+            syncToSpreadsheet('VOID_PAYMENT', {
+                paymentId: trx.kwitansiNo,
+                receiptNo: trx.kwitansiNo,
+                alasan: reason,
+                petugas: (state.loggedInUser && state.loggedInUser.name) || 'Bendahara',
+                role: state.activeRole
+            });
+
+            renderDashboard();
+            if (selectedTrxStudentNis) {
+                selectStudentForPayment(selectedTrxStudentNis);
+            }
+            if (document.getElementById('view-laporan') && !document.getElementById('view-laporan').classList.contains('hidden')) {
+                generateReport();
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Transaksi Berhasil Di-VOID',
+                text: `Kwitansi ${trx.kwitansiNo} telah dibatalkan dan sisa tagihan santri berhasil dipulihkan.`,
+                timer: 2500,
+                showConfirmButton: false
+            });
+        }
+
 
         /* ====================================================================
          * TWO-WAY REALTIME CLOUD SYNC ENGINE (GOOGLE SPREADSHEET)
@@ -3240,25 +4036,26 @@ function respondOutput(obj, callback) {
                 document.getElementById('kwt-school-alamat').innerText = `${state.schoolInfo.alamat || ''} | Telp: ${state.schoolInfo.telepon || ''}`;
             }
 
-            // Generate Verification QR Code (SVG)
+            // Generate Real Verification QR Code (Official Link)
             const qrContainer = document.getElementById('kwt-qr-container');
+            const verifyUrl = `${window.location.origin}${window.location.pathname}?verify=${encodeURIComponent(trx.kwitansiNo)}`;
             qrContainer.innerHTML = `
-                <svg viewBox="0 0 100 100" class="w-full h-full text-slate-800 fill-current">
-                    <rect x="10" y="10" width="25" height="25"/>
-                    <rect x="65" y="10" width="25" height="25"/>
-                    <rect x="10" y="65" width="25" height="25"/>
-                    <rect x="15" y="15" width="15" height="15" fill="white"/>
-                    <rect x="70" y="15" width="15" height="15" fill="white"/>
-                    <rect x="15" y="70" width="15" height="15" fill="white"/>
-                    <rect x="18" y="18" width="9" height="9"/>
-                    <rect x="73" y="18" width="9" height="9"/>
-                    <rect x="18" y="73" width="9" height="9"/>
-                    <rect x="40" y="10" width="10" height="10"/>
-                    <rect x="40" y="30" width="15" height="15"/>
-                    <rect x="55" y="45" width="20" height="20"/>
-                    <rect x="40" y="70" width="20" height="15"/>
-                </svg>
+                <a href="${verifyUrl}" target="_blank" title="Klik atau Scan untuk Memverifikasi Keaslian">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verifyUrl)}" alt="QR Verifikasi" class="w-full h-full object-contain rounded" onerror="this.outerHTML='<span class=\\'text-[8px] font-mono font-bold text-center block\\'>${trx.kwitansiNo}</span>'">
+                </a>
             `;
+
+            // Status Kwitansi Lunas atau VOID
+            const statusEl = document.getElementById('kwt-status');
+            if (statusEl) {
+                if (trx.status === 'VOID') {
+                    statusEl.innerText = 'BATAL / VOID';
+                    statusEl.className = 'block px-2 py-0.5 bg-rose-100 text-rose-800 font-bold text-xs rounded';
+                } else {
+                    statusEl.innerText = 'LUNAS';
+                    statusEl.className = 'block px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold text-xs rounded';
+                }
+            }
 
             document.getElementById('modal-kwitansi').classList.remove('hidden');
         }
@@ -4197,7 +4994,10 @@ function respondOutput(obj, callback) {
                 sortedTrx.forEach(t => {
                     const st = state.students.find(s => s.nis === t.nis);
                     const nominal = Number(t.nominal) || 0;
-                    totalNominal += nominal;
+                    const isVoid = t.status === 'VOID';
+                    if (!isVoid) {
+                        totalNominal += nominal;
+                    }
                     rows.push({
                         kwitansiNo: t.kwitansiNo,
                         tanggal: t.tanggal,
@@ -4207,6 +5007,7 @@ function respondOutput(obj, callback) {
                         posNama: t.posNama,
                         metode: t.metode || 'Tunai',
                         nominal,
+                        status: t.status || 'SUCCESS',
                         petugas: t.petugas || (state.schoolInfo ? state.schoolInfo.bendahara : 'Bendahara')
                     });
                 });
@@ -4400,20 +5201,25 @@ function respondOutput(obj, callback) {
                 `;
             } else {
                 // harian
-                rowsHTML = data.rows.map((r, idx) => `
-                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition">
+                rowsHTML = data.rows.map((r, idx) => {
+                    const isVoid = r.status === 'VOID';
+                    return `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition ${isVoid ? 'opacity-60 bg-rose-50/40 dark:bg-rose-950/20' : ''}">
                         <td class="p-3 text-center text-slate-400 font-mono">${idx + 1}</td>
-                        <td class="p-3 font-mono font-bold text-brand-600 dark:text-brand-400">${r.kwitansiNo}</td>
+                        <td class="p-3 font-mono font-bold text-brand-600 dark:text-brand-400">
+                            ${r.kwitansiNo}
+                            ${isVoid ? '<span class="ml-1.5 px-1.5 py-0.5 bg-rose-100 text-rose-700 border border-rose-200 rounded text-[9px] font-extrabold">VOID</span>' : ''}
+                        </td>
                         <td class="p-3 text-center text-slate-600 dark:text-slate-300">${r.tanggal}</td>
                         <td class="p-3 font-mono text-slate-700 dark:text-slate-200">${r.nis}</td>
                         <td class="p-3 font-bold text-slate-800 dark:text-slate-100">${r.nama}</td>
                         <td class="p-3 text-center"><span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-[10px] font-semibold">${r.kelas}</span></td>
                         <td class="p-3 font-semibold text-slate-700 dark:text-slate-200">${r.posNama}</td>
                         <td class="p-3 text-center"><span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-[10px] font-bold">${r.metode}</span></td>
-                        <td class="p-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">Rp ${r.nominal.toLocaleString('id-ID')}</td>
+                        <td class="p-3 text-right font-mono font-bold ${isVoid ? 'line-through text-slate-400' : 'text-emerald-600 dark:text-emerald-400'}">Rp ${r.nominal.toLocaleString('id-ID')}</td>
                         <td class="p-3 text-slate-600 dark:text-slate-300 text-xs">${r.petugas}</td>
-                    </tr>
-                `).join('');
+                    </tr>`;
+                }).join('');
 
                 tableHTML = `
                     <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
@@ -4966,23 +5772,52 @@ function respondOutput(obj, callback) {
             reader.onload = function(e) {
                 try {
                     const imported = JSON.parse(e.target.result);
-                    if(imported && imported.students && imported.jenisPembayaran) {
-                        state = imported;
-                        saveState();
-                        initializeMainUI();
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Data Berhasil Dipulihkan!',
-                            text: `Alhamdulillah! Sebanyak ${state.students.length} data siswa dan ${state.transactions ? state.transactions.length : 0} riwayat transaksi berhasil disinkronkan ke perangkat ini!`,
-                            confirmButtonColor: '#0284c7'
-                        });
-                    } else {
-                        Swal.fire('Format Salah', 'File ini tidak valid sebagai berkas cadangan database pembayaran SMP MQ.', 'error');
+                    if (!imported || typeof imported !== 'object' || !Array.isArray(imported.students) || !Array.isArray(imported.jenisPembayaran)) {
+                        Swal.fire('Format Tidak Sah', 'Berkas ini bukan cadangan database SMP MQ yang sah (skema tidak valid).', 'error');
+                        return;
                     }
+
+                    const siswaCount = imported.students.length;
+                    const trxCount = imported.transactions ? imported.transactions.length : 0;
+                    const billCount = imported.bills ? imported.bills.length : 0;
+
+                    Swal.fire({
+                        title: 'Pulihkan Data Cadangan?',
+                        html: `
+                            <div class="text-left text-xs space-y-2 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600">
+                                <p class="font-bold text-slate-800 dark:text-slate-100">Pratinjau Data Cadangan:</p>
+                                <ul class="list-disc pl-5 text-slate-600 dark:text-slate-300">
+                                    <li>Data Siswa: <b>${siswaCount} siswa</b></li>
+                                    <li>Riwayat Transaksi: <b>${trxCount} transaksi</b></li>
+                                    <li>Tagihan Pembayaran: <b>${billCount} tagihan</b></li>
+                                </ul>
+                                <p class="text-[11px] text-emerald-600 dark:text-emerald-400 mt-2">Sistem otomatis membuat snapshot darurat dari data saat ini sebelum menimpa.</p>
+                            </div>
+                        `,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#0284c7',
+                        cancelButtonColor: '#64748b',
+                        confirmButtonText: 'Ya, Pulihkan Sekarang'
+                    }).then((res) => {
+                        if (res.isConfirmed) {
+                            localStorage.setItem('paymentApp_pre_restore_snapshot', JSON.stringify(state));
+                            state = imported;
+                            saveState();
+                            syncFullStateToCloud();
+                            initializeMainUI();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Database Dipulihkan!',
+                                text: `Sebanyak ${siswaCount} santri dan ${trxCount} transaksi berhasil dipulihkan.`,
+                                confirmButtonColor: '#0284c7'
+                            });
+                        }
+                    });
                 } catch(err) {
-                    Swal.fire('Gagal Membaca File', 'Terjadi kesalahan saat memproses file JSON: ' + err.message, 'error');
+                    Swal.fire('Gagal Membaca File', 'Berkas korup atau format JSON tidak terbaca: ' + err.message, 'error');
                 }
-                event.target.value = ''; // Reset input file
+                event.target.value = '';
             };
             reader.readAsText(file);
         }
@@ -4994,18 +5829,19 @@ function respondOutput(obj, callback) {
             Swal.fire({
                 title: 'RESET TOTAL DATABASE?',
                 html: `
-                    <div class="text-left text-xs space-y-2.5 text-slate-700 dark:text-slate-200">
-                        <p class="font-bold text-rose-600 dark:text-rose-400">
-                            <i class="fa-solid fa-triangle-exclamation mr-1"></i> Perhatian: Tindakan ini akan mengosongkan:
-                        </p>
-                        <ul class="list-disc pl-5 space-y-1 text-slate-600 dark:text-slate-300">
-                            <li>Seluruh <b>Data Siswa</b> (${state.students ? state.students.length : 0} siswa)</li>
-                            <li>Seluruh <b>Riwayat Transaksi & Kwitansi</b> (${state.transactions ? state.transactions.length : 0} transaksi)</li>
-                            <li>Seluruh <b>Tagihan Pembayaran Siswa</b> (${state.bills ? state.bills.length : 0} tagihan)</li>
-                            <li>Seluruh <b>Master Pos Pembayaran</b> (${state.jenisPembayaran ? state.jenisPembayaran.length : 0} pos)</li>
-                        </ul>
-                        <div class="p-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-amber-800 dark:text-amber-300">
-                            <b>Catatan Aman:</b> Akun login Super Administrator (admin) dan Pengaturan Identitas Sekolah (Alamat & Google Script URL) <b>tetap aman tersimpan</b>.
+                    <div class="text-left text-xs space-y-3 text-slate-700 dark:text-slate-200">
+                        <div class="p-3 bg-rose-50 dark:bg-rose-950/40 rounded-xl border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200">
+                            <p class="font-bold"><i class="fa-solid fa-shield-halved mr-1"></i> Proteksi Keamanan Tingkat Tinggi:</p>
+                            <p class="mt-1">Tindakan ini akan mengosongkan seluruh Siswa (${state.students ? state.students.length : 0}), Transaksi (${state.transactions ? state.transactions.length : 0}), Tagihan (${state.bills ? state.bills.length : 0}), dan Master Pos (${state.jenisPembayaran ? state.jenisPembayaran.length : 0}).</p>
+                            <p class="mt-1 font-bold text-rose-600">Sistem otomatis mengunduh berkas cadangan (backup JSON) sebelum eksekusi.</p>
+                        </div>
+                        <div>
+                            <label class="block font-semibold mb-1">Ketik kata <span class="font-mono text-rose-600 font-bold">RESET DATABASE</span> untuk konfirmasi:</label>
+                            <input id="swal-reset-confirm-text" class="swal2-input !m-0 !w-full text-xs font-mono" placeholder="RESET DATABASE">
+                        </div>
+                        <div>
+                            <label class="block font-semibold mb-1">Masukkan Sandi Super Administrator:</label>
+                            <input id="swal-reset-password" type="password" class="swal2-input !m-0 !w-full text-xs" placeholder="Password Admin">
                         </div>
                     </div>
                 `,
@@ -5013,10 +5849,24 @@ function respondOutput(obj, callback) {
                 showCancelButton: true,
                 confirmButtonColor: '#e11d48',
                 cancelButtonColor: '#64748b',
-                confirmButtonText: 'Ya, Kosongkan & Reset Sekarang',
-                cancelButtonText: 'Batal'
+                confirmButtonText: 'Konfirmasi Reset & Unduh Backup',
+                cancelButtonText: 'Batal',
+                preConfirm: () => {
+                    const confirmText = document.getElementById('swal-reset-confirm-text').value.trim();
+                    const password = document.getElementById('swal-reset-password').value;
+                    if (confirmText !== 'RESET DATABASE') {
+                        Swal.showValidationMessage('Teks konfirmasi harus tepat: RESET DATABASE');
+                        return false;
+                    }
+                    if (password !== 'admin' && password !== 'admin123') {
+                        Swal.showValidationMessage('Password Super Administrator tidak cocok.');
+                        return false;
+                    }
+                    return true;
+                }
             }).then((result) => {
                 if (result.isConfirmed) {
+                    exportDatabaseBackup();
                     executeCleanReset(true);
                 }
             });
