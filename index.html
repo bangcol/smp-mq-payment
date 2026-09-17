@@ -1986,15 +1986,17 @@ function respondOutput(obj, callback) {
                         </div>
                     </div>
 
-                    <script>
-                        window.onload = function() {
-                            window.print();
-                        }
-                    </script>
+                    </div>
                 </body>
                 </html>
             `);
             printWin.document.close();
+            setTimeout(() => {
+                try {
+                    printWin.focus();
+                    printWin.print();
+                } catch(e) {}
+            }, 500);
         }
 
         /* CEK VERIFIKASI PUBLIK RESMI (QR CODE SCAN) */
