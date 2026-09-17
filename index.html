@@ -565,6 +565,41 @@
                         </div>
                     </div>
 
+                    
+                    <!-- Multi-Bill Selection & Batch Checkout Toolbar -->
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center mr-1">
+                                <i class="fa-solid fa-layer-group text-brand-600 mr-2"></i> Pilihan Cepat:
+                            </span>
+                            <button type="button" onclick="selectAllUnpaidBills(true)" class="px-3 py-1.5 bg-brand-50 hover:bg-brand-100 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 rounded-lg text-xs font-bold border border-brand-200 dark:border-brand-800 transition flex items-center space-x-1 shadow-sm">
+                                <i class="fa-solid fa-check-double text-[11px]"></i>
+                                <span>Pilih Semua Belum Lunas</span>
+                            </button>
+                            <button type="button" onclick="selectSPPUnpaidBills(true)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-600 transition">
+                                <span>Pilih SPP Tertunggak</span>
+                            </button>
+                            <button type="button" onclick="selectNonSPPUnpaidBills(true)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-600 transition">
+                                <span>Pilih Tagihan Lainnya</span>
+                            </button>
+                            <button type="button" onclick="resetSelectedBills()" class="px-2.5 py-1.5 text-slate-500 hover:text-rose-600 text-xs font-semibold transition flex items-center space-x-1">
+                                <i class="fa-solid fa-rotate-left text-[10px]"></i>
+                                <span>Reset Pilihan</span>
+                            </button>
+                        </div>
+
+                        <div class="flex items-center space-x-3">
+                            <div class="text-right">
+                                <span class="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider">Keranjang Tagihan</span>
+                                <span class="text-sm font-black text-slate-800 dark:text-slate-100" id="trx-selected-count-badge">0 Tagihan (Rp 0)</span>
+                            </div>
+                            <button id="btn-bayar-terpilih" onclick="openModalBayarMulti()" disabled class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs rounded-xl shadow-md transition flex items-center space-x-2">
+                                <i class="fa-solid fa-cash-register"></i>
+                                <span>Bayar Tagihan Terpilih</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Bills Matrix Section -->
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         
@@ -1244,32 +1279,54 @@ function respondOutput(obj, callback) {
     </div>
 
     <!-- MODAL 1: MODAL PROSES PEMBAYARAN -->
-    <div id="modal-bayar" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-700 animate-fadeIn">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100" id="modal-bayar-title">Proses Pembayaran</h3>
-                <button onclick="closeModalBayar()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+    <div id="modal-bayar" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden overflow-y-auto">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full p-6 border border-slate-200 dark:border-slate-700 animate-fadeIn my-auto max-h-[95vh] flex flex-col">
+            <!-- Header Modal -->
+            <div class="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
+                <div>
+                    <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 flex items-center">
+                        <i class="fa-solid fa-cash-register text-emerald-600 mr-2"></i>
+                        <span id="modal-bayar-title">Proses Pembayaran Tagihan</span>
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" id="modal-bayar-siswa-info">Santri: -</p>
+                </div>
+                <button type="button" onclick="closeModalBayar()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             
-            <form id="form-bayar" onsubmit="executePaymentSubmit(event)" class="space-y-4">
-                <input type="hidden" id="modal-bayar-id-tagihan">
+            <form id="form-bayar" onsubmit="executePaymentSubmit(event)" class="space-y-4 overflow-y-auto pt-3 pr-1">
                 <input type="hidden" id="modal-bayar-nis">
 
-                <div class="bg-slate-50 dark:bg-slate-700 p-3 rounded-xl border border-slate-200 dark:border-slate-600">
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Rincian Siswa & Tagihan</p>
-                    <p class="font-bold text-sm text-slate-800 dark:text-slate-100 mt-0.5" id="modal-bayar-siswa-info">Budi Santoso (X IPA 1)</p>
-                    <p class="text-xs font-semibold text-brand-600 dark:text-brand-400 mt-1" id="modal-bayar-pos-info">SPP Bulan Januari - Rp 300.000</p>
-                </div>
-
+                <!-- Daftar Pos Tagihan Terpilih & Koreksi Cicilan Real-Time -->
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Nominal Yang Dibayarkan (Rp)</label>
-                    <input type="number" id="modal-bayar-nominal" oninput="calculateCashChange()" required class="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-base font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-brand-500">
-                    <p class="text-[11px] text-brand-600 dark:text-brand-400 font-semibold mt-1" id="modal-bayar-terbilang-preview"># Nol Rupiah #</p>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center">
+                            <i class="fa-solid fa-receipt text-indigo-500 mr-1.5"></i> Pos Tagihan Terpilih & Nominal Bayar
+                        </label>
+                        <span class="text-[11px] font-semibold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/40 px-2 py-0.5 rounded-full" id="modal-bayar-items-count">0 Pos Dipilih</span>
+                    </div>
+
+                    <div id="modal-bayar-items-container" class="space-y-2.5 max-h-[290px] overflow-y-auto pr-1">
+                        <!-- Di-generate dinamis per bill -->
+                    </div>
                 </div>
 
+                <!-- Total Nominal & Koreksi Live Tunggakan Siswa -->
+                <div class="p-3.5 bg-gradient-to-br from-slate-50 to-brand-50/40 dark:from-slate-700/60 dark:to-slate-700/30 rounded-xl border border-brand-200/80 dark:border-slate-600 space-y-2 shadow-sm">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Total Nominal Dibayar:</span>
+                        <span class="text-xl font-black text-emerald-600 dark:text-emerald-400" id="modal-bayar-total-nominal">Rp 0</span>
+                    </div>
+                    <p class="text-[11px] text-brand-700 dark:text-brand-300 font-semibold italic" id="modal-bayar-terbilang-preview"># Nol Rupiah #</p>
+                    <div class="pt-2 border-t border-slate-200 dark:border-slate-600 flex justify-between items-center text-xs">
+                        <span class="text-slate-500 dark:text-slate-400 font-medium">Sisa Tunggakan Santri Setelah Transaksi:</span>
+                        <span class="font-black text-rose-600 dark:text-rose-400" id="modal-bayar-sisa-siswa-preview">Rp 0</span>
+                    </div>
+                </div>
+
+                <!-- Metode Pembayaran -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Metode Pembayaran</label>
-                    <select id="modal-bayar-metode" onchange="toggleMetodeBayarFields()" class="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-semibold outline-none">
+                    <select id="modal-bayar-metode" onchange="toggleMetodeBayarFields()" class="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-brand-500">
                         <option value="Cash / Tunai">Cash / Tunai (Bendahara Sekolah)</option>
                         <option value="Transfer Bank">Transfer Bank (BSI / BRI / Mandiri)</option>
                         <option value="QRIS">QRIS Statis Sekolah</option>
@@ -1280,7 +1337,7 @@ function respondOutput(obj, callback) {
                 <div id="modal-bayar-cash-section" class="p-3 bg-emerald-50/70 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800/60 space-y-2">
                     <div class="flex justify-between items-center">
                         <label class="text-xs font-bold text-emerald-800 dark:text-emerald-300">Uang Tunai Diterima (Rp)</label>
-                        <span class="text-[10px] text-emerald-600 font-semibold cursor-pointer hover:underline" onclick="setCashExact()">[Uang Pas]</span>
+                        <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold cursor-pointer hover:underline" onclick="setCashExact()">[Uang Pas]</span>
                     </div>
                     <input type="number" id="modal-bayar-cash-received" oninput="calculateCashChange()" placeholder="Masukkan uang tunai santri" class="w-full p-2 bg-white dark:bg-slate-700 border border-emerald-300 dark:border-emerald-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-emerald-500">
                     <div class="flex space-x-1.5 pt-1">
@@ -1303,13 +1360,16 @@ function respondOutput(obj, callback) {
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Keterangan / Catatan</label>
-                    <input type="text" id="modal-bayar-ket" placeholder="Contoh: Titip lewat wali kelas / Lunas" class="w-full p-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs outline-none">
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Keterangan / Catatan Transaksi</label>
+                    <input type="text" id="modal-bayar-ket" placeholder="Contoh: Titip lewat wali kelas / Angsuran ke-1" class="w-full p-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs outline-none">
                 </div>
 
-                <div class="pt-2 flex space-x-3">
+                <div class="pt-3 border-t border-slate-200 dark:border-slate-700 flex space-x-3">
                     <button type="button" onclick="closeModalBayar()" class="flex-1 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 font-semibold text-xs rounded-xl transition">Batal</button>
-                    <button type="submit" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition">Simpan & Cetak Kwitansi</button>
+                    <button type="submit" id="modal-bayar-submit-btn" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-1.5">
+                        <i class="fa-solid fa-check"></i>
+                        <span>Simpan & Cetak Kwitansi</span>
+                    </button>
                 </div>
             </form>
         </div>
@@ -2851,8 +2911,16 @@ function respondOutput(obj, callback) {
             document.getElementById('transaksi-active-student-container').classList.add('hidden');
         }
 
+        
+        /* ====================================================================
+         * MODUL MULTI JENIS PEMBAYARAN MATRIKS & KOREKSI CICILAN REAL-TIME
+         * ==================================================================== */
+        let selectedTrxBillIds = [];
+        let activeModalBillIds = [];
+
         function selectStudentForPayment(nis) {
             selectedTrxStudentNis = nis;
+            selectedTrxBillIds = [];
             const st = state.students.find(s => s.nis === nis);
             if(!st) return;
 
@@ -2870,87 +2938,202 @@ function respondOutput(obj, callback) {
             document.getElementById('trx-student-parents').innerText = `Wali: ${st.ayah} (${st.hp})`;
             document.getElementById('trx-student-avatar').innerText = st.nama.split(' ').map(n=>n[0]).join('');
 
-            // Calculate total student tunggakan
-            const stBills = state.bills.filter(b => b.nis === nis);
-            let tunggakan = 0;
-            stBills.forEach(b => { tunggakan += (b.nominal - b.dibayar); });
-            document.getElementById('trx-student-tunggakan').innerText = `Rp ${tunggakan.toLocaleString('id-ID')}`;
+            // Hitung total tunggakan siswa
+            refreshStudentTunggakanHeader(nis);
 
-            // Render SPP Months Grid
+            // Render SPP & Pos Lainnya
+            renderStudentMatrixAndBills(nis);
+
+            // Render History Table for Student dengan Dukungan VOID & Reversal
+            renderStudentTrxHistory(nis);
+
+            // Update status toolbar pilihan
+            updateSelectionToolbarUI();
+        }
+
+        function refreshStudentTunggakanHeader(nis) {
+            const stBills = (state.bills || []).filter(b => b.nis === nis);
+            let tunggakan = 0;
+            stBills.forEach(b => { tunggakan += Math.max(0, (b.nominal - b.dibayar)); });
+            const tunggakanEl = document.getElementById('trx-student-tunggakan');
+            if (tunggakanEl) {
+                tunggakanEl.innerText = `Rp ${tunggakan.toLocaleString('id-ID')}`;
+            }
+        }
+
+        function renderStudentMatrixAndBills(nis) {
+            const st = state.students.find(s => s.nis === nis);
+            if (!st) return;
+            const stBills = (state.bills || []).filter(b => b.nis === nis);
+
+            // Render SPP Months Grid (Bulanan)
             const monthsGrid = document.getElementById('spp-months-grid');
             const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
             const posBulanan = (state.jenisPembayaran || []).find(p => p.kategori === 'Bulanan') || { id: 'POS1', nama: 'SPP Bulanan', nominal: 300000 };
             
             const sppHint = document.getElementById('spp-matrix-rate-hint');
             if (sppHint) {
-                sppHint.innerText = `Klik bulan untuk memproses pembayaran bulanan (Rp ${(posBulanan.nominal || 300000).toLocaleString('id-ID')} / bln)`;
+                sppHint.innerText = `Bisa centang beberapa bulan untuk bayar sekaligus (Rp ${(posBulanan.nominal || 300000).toLocaleString('id-ID')} / bln)`;
             }
             
             monthsGrid.innerHTML = months.map((m, idx) => {
-                const bill = stBills.find(b => (
+                const billId = `BILL-${posBulanan.id || 'POS1'}-${st.nis}-${idx}`;
+                let bill = stBills.find(b => (
+                    b.id === billId || 
                     b.id === `BILL-SPP-${st.nis}-${idx}` || 
-                    b.id === `BILL-${posBulanan.id}-${st.nis}-${idx}` || 
                     b.namaPos === `SPP ${m}` || 
                     b.namaPos === `SPP Bulanan (${m})` ||
                     (b.kategori === 'Bulanan' && b.namaPos.toLowerCase().includes(m.toLowerCase()))
                 ));
-                const isPaid = bill && (bill.status === 'Lunas' || bill.dibayar >= bill.nominal);
-                const nominalTampil = bill ? bill.nominal : (posBulanan.nominal || 300000);
+
+                if (!bill) {
+                    bill = {
+                        id: billId,
+                        nis: st.nis,
+                        posId: posBulanan.id || 'POS1',
+                        namaPos: `SPP ${m}`,
+                        kategori: 'Bulanan',
+                        nominal: posBulanan.nominal || 300000,
+                        dibayar: 0,
+                        status: 'Belum Lunas'
+                    };
+                    state.bills.push(bill);
+                }
+
+                const sisa = Math.max(0, bill.nominal - bill.dibayar);
+                const isPaid = sisa <= 0;
+                const isCicilan = !isPaid && bill.dibayar > 0;
+                const isSelected = selectedTrxBillIds.includes(bill.id);
+
+                let cardStyle = 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/60 hover:border-brand-500';
+                if (isPaid) {
+                    cardStyle = 'bg-emerald-50 border-emerald-300 dark:bg-emerald-950/30 hover:border-emerald-500 cursor-pointer shadow-sm';
+                } else if (isSelected) {
+                    cardStyle = 'bg-brand-50/80 dark:bg-brand-950/40 border-brand-500 ring-2 ring-brand-500 shadow-md';
+                } else if (isCicilan) {
+                    cardStyle = 'bg-amber-50/60 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800/80 hover:border-brand-500';
+                }
 
                 return `
-                    <div class="p-3 rounded-xl border text-center transition select-none ${
-                        isPaid 
-                            ? 'bg-emerald-50 border-emerald-300 dark:bg-emerald-950/30 hover:border-emerald-500 cursor-pointer shadow-sm' 
-                            : 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/60 hover:border-brand-500 hover:shadow-md cursor-pointer'
-                    }"
-                         onclick="openModalBayarSPP('${st.nis}', '${m}', ${idx})"
-                         title="Klik untuk ${isPaid ? 'lihat kwitansi' : 'bayar SPP ' + m}">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-xs font-bold ${isPaid ? 'text-emerald-800 dark:text-emerald-300' : 'text-slate-800 dark:text-slate-200'}">${m}</span>
-                            <i class="fa-solid ${isPaid ? 'fa-circle-check text-emerald-500' : 'fa-circle-xmark text-rose-400'} text-xs"></i>
+                    <div class="p-3 rounded-xl border text-center transition select-none relative ${cardStyle}"
+                         onclick="handleMonthCardClick(event, '${bill.id}', '${st.nis}', '${m}', ${idx}, ${isPaid})">
+                        ${!isPaid ? `
+                            <div class="absolute top-2 left-2.5">
+                                <input type="checkbox" 
+                                       id="chk-bill-${bill.id}" 
+                                       ${isSelected ? 'checked' : ''} 
+                                       onchange="event.stopPropagation(); toggleSelectBill('${bill.id}', this.checked)"
+                                       class="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500 cursor-pointer">
+                            </div>
+                        ` : ''}
+                        
+                        <div class="flex items-center justify-end mb-1">
+                            <span class="text-xs font-bold mr-auto ${!isPaid ? 'pl-6' : ''} ${isPaid ? 'text-emerald-800 dark:text-emerald-300' : 'text-slate-800 dark:text-slate-200'}">${m}</span>
+                            <i class="fa-solid ${isPaid ? 'fa-circle-check text-emerald-500' : (isCicilan ? 'fa-clock-rotate-left text-amber-500' : 'fa-circle-xmark text-rose-400')} text-xs"></i>
                         </div>
-                        <span class="text-[11px] block mt-0.5 font-bold ${isPaid ? 'text-emerald-600' : 'text-rose-600 dark:text-rose-400'}">
-                            ${isPaid ? '✔ LUNAS' : 'Rp ' + nominalTampil.toLocaleString('id-ID')}
-                        </span>
-                        <div class="mt-2">
-                            ${isPaid 
-                                ? `<span class="inline-block px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200 text-[10px] font-semibold rounded">Lunas</span>` 
-                                : `<button type="button" class="w-full py-1 bg-brand-600 hover:bg-brand-700 text-white rounded text-[11px] font-bold shadow-sm transition">Bayar</button>`
-                            }
-                        </div>
+
+                        ${isPaid ? `
+                            <span class="text-[11px] block mt-1 font-bold text-emerald-600">✔ LUNAS</span>
+                            <div class="mt-2">
+                                <span class="inline-block px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200 text-[10px] font-semibold rounded">Lihat Kwitansi</span>
+                            </div>
+                        ` : (isCicilan ? `
+                            <span class="text-[10px] block font-semibold text-amber-700 dark:text-amber-300">Dicicil: Rp ${bill.dibayar.toLocaleString('id-ID')}</span>
+                            <span class="text-[11px] block font-extrabold text-rose-600 dark:text-rose-400">Sisa: Rp ${sisa.toLocaleString('id-ID')}</span>
+                            <div class="mt-1.5 flex space-x-1">
+                                <button type="button" onclick="event.stopPropagation(); openModalBayar('${bill.id}', '${st.nis}')" class="flex-1 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-[10px] font-bold shadow-sm transition">Cicil Lanjut</button>
+                            </div>
+                        ` : `
+                            <span class="text-[11px] block mt-0.5 font-bold text-rose-600 dark:text-rose-400">Rp ${bill.nominal.toLocaleString('id-ID')}</span>
+                            <div class="mt-2 flex space-x-1">
+                                <button type="button" onclick="event.stopPropagation(); openModalBayar('${bill.id}', '${st.nis}')" class="flex-1 py-1 bg-brand-600 hover:bg-brand-700 text-white rounded text-[11px] font-bold shadow-sm transition">Bayar</button>
+                            </div>
+                        `)}
                     </div>
                 `;
             }).join('');
 
-            // Render Other Bills (Tahunan, Bebas, Sekali)
+            // Render Other Bills (Tahunan, Bebas/Cicilan, Sekali)
             const otherBillsList = document.getElementById('other-bills-list');
             const otherBills = stBills.filter(b => b.kategori !== 'Bulanan');
 
-            otherBillsList.innerHTML = otherBills.map(b => {
-                const remaining = b.nominal - b.dibayar;
-                const isLunas = remaining <= 0;
+            if (otherBills.length === 0) {
+                otherBillsList.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-4">Tidak ada tagihan non-SPP untuk siswa ini.</p>`;
+            } else {
+                otherBillsList.innerHTML = otherBills.map(b => {
+                    const remaining = Math.max(0, b.nominal - b.dibayar);
+                    const isLunas = remaining <= 0;
+                    const isSelected = selectedTrxBillIds.includes(b.id);
+                    const percentPaid = b.nominal > 0 ? Math.min(100, Math.round((b.dibayar / b.nominal) * 100)) : 100;
 
-                return `
-                    <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 flex justify-between items-center">
-                        <div>
-                            <span class="font-bold text-xs text-slate-800 dark:text-slate-100 block">${b.namaPos}</span>
-                            <span class="text-[11px] text-slate-500">Kat: ${b.kategori} | Total: Rp ${b.nominal.toLocaleString('id-ID')}</span>
-                            ${b.kategori === 'Bebas' ? `<span class="text-[10px] text-brand-600 block mt-0.5">Sudah Bayar: Rp ${b.dibayar.toLocaleString('id-ID')} | Sisa: Rp ${remaining.toLocaleString('id-ID')}</span>` : ''}
-                        </div>
-                        <div>
-                            ${isLunas 
-                                ? `<span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 font-bold text-[10px] rounded-full">LUNAS</span>`
-                                : `<button onclick="openModalBayar('${b.id}', '${st.nis}')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow transition">Bayar</button>`
-                            }
-                        </div>
-                    </div>
-                `;
-            }).join('');
+                    let itemStyle = 'bg-slate-50 dark:bg-slate-700/40 border-slate-200 dark:border-slate-700';
+                    if (isLunas) {
+                        itemStyle = 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60';
+                    } else if (isSelected) {
+                        itemStyle = 'bg-brand-50/80 dark:bg-brand-950/40 border-brand-500 ring-2 ring-brand-500';
+                    }
 
-            // Render History Table for Student dengan Dukungan VOID & Reversal
+                    return `
+                        <div class="p-3 rounded-xl border ${itemStyle} transition relative select-none">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex items-start space-x-2.5">
+                                    ${!isLunas ? `
+                                        <input type="checkbox" 
+                                               id="chk-bill-${b.id}" 
+                                               ${isSelected ? 'checked' : ''} 
+                                               onchange="toggleSelectBill('${b.id}', this.checked)"
+                                               class="w-4 h-4 mt-0.5 text-brand-600 rounded border-slate-300 focus:ring-brand-500 cursor-pointer">
+                                    ` : `
+                                        <i class="fa-solid fa-circle-check text-emerald-500 mt-0.5 text-sm"></i>
+                                    `}
+                                    <div>
+                                        <span class="font-bold text-xs text-slate-800 dark:text-slate-100 block">${b.namaPos}</span>
+                                        <span class="text-[11px] text-slate-500">Kat: ${b.kategori} | Total: Rp ${b.nominal.toLocaleString('id-ID')}</span>
+                                        
+                                        <!-- Real-time Balance / Installment Progress -->
+                                        ${!isLunas ? `
+                                            <div class="mt-1 space-y-1">
+                                                <div class="flex items-center space-x-2 text-[11px]">
+                                                    <span class="text-slate-600 dark:text-slate-300">Dibayar: <b class="text-emerald-600">Rp ${b.dibayar.toLocaleString('id-ID')}</b></span>
+                                                    <span>•</span>
+                                                    <span class="text-rose-600 dark:text-rose-400 font-bold">Sisa: Rp ${remaining.toLocaleString('id-ID')}</span>
+                                                </div>
+                                                <div class="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-1.5 overflow-hidden">
+                                                    <div class="bg-emerald-500 h-1.5 rounded-full" style="width: ${percentPaid}%"></div>
+                                                </div>
+                                            </div>
+                                        ` : `
+                                            <span class="text-[10px] text-emerald-600 font-bold block mt-0.5">Lunas Penuh (Rp ${b.nominal.toLocaleString('id-ID')})</span>
+                                        `}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    ${isLunas ? `
+                                        <span class="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200 font-bold text-[10px] rounded-full">LUNAS</span>
+                                    ` : `
+                                        <button type="button" onclick="openModalBayar('${b.id}', '${st.nis}')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow transition">
+                                            ${b.dibayar > 0 ? 'Cicil Lagi' : 'Bayar'}
+                                        </button>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        function renderStudentTrxHistory(nis) {
             const stTrx = (state.transactions || []).filter(t => t.nis === nis);
             const historyTb = document.getElementById('trx-student-history-table');
+            if (!historyTb) return;
             const isStaff = state.activeRole === 'superadmin' || state.activeRole === 'admin' || state.activeRole === 'bendahara';
+
+            if (stTrx.length === 0) {
+                historyTb.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400 italic">Belum ada riwayat transaksi untuk siswa ini.</td></tr>`;
+                return;
+            }
 
             historyTb.innerHTML = stTrx.map(t => {
                 const isVoid = t.status === 'VOID';
@@ -2961,7 +3144,10 @@ function respondOutput(obj, callback) {
                         ${isVoid ? '<span class="block text-[9px] text-rose-600 font-bold uppercase tracking-wider">BATAL / VOID</span>' : ''}
                     </td>
                     <td class="p-3">${t.tanggal}</td>
-                    <td class="p-3 font-semibold text-slate-800 dark:text-slate-100">${t.posNama}</td>
+                    <td class="p-3 font-semibold text-slate-800 dark:text-slate-100">
+                        ${t.posNama}
+                        ${t.keterangan ? `<span class="block text-[10px] text-slate-400 font-normal italic">${t.keterangan}</span>` : ''}
+                    </td>
                     <td class="p-3 font-bold ${isVoid ? 'line-through text-rose-400' : 'text-emerald-600'}">Rp ${t.nominal.toLocaleString('id-ID')}</td>
                     <td class="p-3">${t.metode || 'Tunai'}</td>
                     <td class="p-3">${t.petugas || 'Bendahara'}</td>
@@ -2980,20 +3166,125 @@ function respondOutput(obj, callback) {
             }).join('');
         }
 
-        /* MODAL BAYAR LOGIC */
+        /* Handler klik kartu SPP Bulanan */
+        function handleMonthCardClick(event, billId, nis, monthName, monthIndex, isPaid) {
+            if (isPaid) {
+                // Tampilkan kwitansi transaksi pembayaran bulan ini
+                const paidTrx = (state.transactions || []).find(t => t.nis === nis && (
+                    t.posNama === `SPP ${monthName}` || 
+                    (t.posNama && t.posNama.toLowerCase().includes(monthName.toLowerCase()))
+                ));
+                const st = state.students.find(s => s.nis === nis);
+                if (paidTrx && st) {
+                    showKwitansiModal(paidTrx, st);
+                } else {
+                    Swal.fire({
+                        title: `SPP ${monthName} Lunas`,
+                        html: `<p class="text-sm text-slate-600">Tagihan SPP bulan <b>${monthName}</b> sudah lunas.</p>`,
+                        icon: 'success'
+                    });
+                }
+                return;
+            }
+
+            // Jika belum lunas, toggle checkbox pilihan
+            const chk = document.getElementById(`chk-bill-${billId}`);
+            const newState = !selectedTrxBillIds.includes(billId);
+            if (chk) chk.checked = newState;
+            toggleSelectBill(billId, newState);
+        }
+
+        function toggleSelectBill(billId, isChecked) {
+            const idx = selectedTrxBillIds.indexOf(billId);
+            if (isChecked && idx === -1) {
+                selectedTrxBillIds.push(billId);
+            } else if (!isChecked && idx !== -1) {
+                selectedTrxBillIds.splice(idx, 1);
+            }
+            updateSelectionToolbarUI();
+            // Refresh visuals tanpa reset
+            if (selectedTrxStudentNis) {
+                renderStudentMatrixAndBills(selectedTrxStudentNis);
+            }
+        }
+
+        function selectAllUnpaidBills(select = true) {
+            if (!selectedTrxStudentNis) return;
+            const stBills = (state.bills || []).filter(b => b.nis === selectedTrxStudentNis);
+            const unpaid = stBills.filter(b => (b.nominal - b.dibayar) > 0);
+            if (select) {
+                selectedTrxBillIds = unpaid.map(b => b.id);
+            } else {
+                selectedTrxBillIds = [];
+            }
+            updateSelectionToolbarUI();
+            renderStudentMatrixAndBills(selectedTrxStudentNis);
+        }
+
+        function selectSPPUnpaidBills(select = true) {
+            if (!selectedTrxStudentNis) return;
+            const stBills = (state.bills || []).filter(b => b.nis === selectedTrxStudentNis);
+            const unpaidSPP = stBills.filter(b => b.kategori === 'Bulanan' && (b.nominal - b.dibayar) > 0);
+            selectedTrxBillIds = unpaidSPP.map(b => b.id);
+            updateSelectionToolbarUI();
+            renderStudentMatrixAndBills(selectedTrxStudentNis);
+        }
+
+        function selectNonSPPUnpaidBills(select = true) {
+            if (!selectedTrxStudentNis) return;
+            const stBills = (state.bills || []).filter(b => b.nis === selectedTrxStudentNis);
+            const unpaidNonSPP = stBills.filter(b => b.kategori !== 'Bulanan' && (b.nominal - b.dibayar) > 0);
+            selectedTrxBillIds = unpaidNonSPP.map(b => b.id);
+            updateSelectionToolbarUI();
+            renderStudentMatrixAndBills(selectedTrxStudentNis);
+        }
+
+        function resetSelectedBills() {
+            selectedTrxBillIds = [];
+            updateSelectionToolbarUI();
+            if (selectedTrxStudentNis) {
+                renderStudentMatrixAndBills(selectedTrxStudentNis);
+            }
+        }
+
+        function updateSelectionToolbarUI() {
+            const badgeEl = document.getElementById('trx-selected-count-badge');
+            const btnPay = document.getElementById('btn-bayar-terpilih');
+            if (!badgeEl || !btnPay) return;
+
+            const selectedBills = (state.bills || []).filter(b => selectedTrxBillIds.includes(b.id));
+            let totalSisaTerpilih = 0;
+            selectedBills.forEach(b => { totalSisaTerpilih += Math.max(0, b.nominal - b.dibayar); });
+
+            const count = selectedBills.length;
+            badgeEl.innerText = `${count} Tagihan (Rp ${totalSisaTerpilih.toLocaleString('id-ID')})`;
+            if (count > 0) {
+                btnPay.removeAttribute('disabled');
+                btnPay.innerHTML = `<i class="fa-solid fa-cash-register"></i><span>Bayar Tagihan Terpilih (${count})</span>`;
+                badgeEl.className = 'text-sm font-black text-brand-600 dark:text-brand-400';
+            } else {
+                btnPay.setAttribute('disabled', 'true');
+                btnPay.innerHTML = `<i class="fa-solid fa-cash-register"></i><span>Bayar Tagihan Terpilih</span>`;
+                badgeEl.className = 'text-sm font-black text-slate-800 dark:text-slate-100';
+            }
+        }
+
+        /* BUKA MODAL BAYAR SINGLE / MULTI */
+        function openModalBayar(billId, nis) {
+            if (!nis) nis = selectedTrxStudentNis;
+            openModalBayarMulti([billId], nis);
+        }
+
         function openModalBayarSPP(nis, monthName, monthIndex) {
             const st = state.students.find(s => s.nis === nis);
             if (!st) return;
 
             const posBulanan = (state.jenisPembayaran || []).find(p => p.kategori === 'Bulanan') || { id: 'POS1', nama: 'SPP Bulanan', nominal: 300000 };
-            const billId = `BILL-SPP-${st.nis}-${monthIndex}`;
-            const billNama = `SPP ${monthName}`;
-
-            let bill = state.bills.find(b => b.nis === nis && (
+            const billId = `BILL-${posBulanan.id || 'POS1'}-${st.nis}-${monthIndex}`;
+            let bill = (state.bills || []).find(b => b.nis === nis && (
                 b.id === billId || 
-                b.id === `BILL-${posBulanan.id}-${st.nis}-${monthIndex}` || 
-                b.namaPos === billNama || 
-                b.namaPos === `SPP Bulanan (${monthName})` ||
+                b.id === `BILL-SPP-${st.nis}-${monthIndex}` || 
+                b.namaPos === `SPP ${monthName}` || 
                 (b.kategori === 'Bulanan' && b.namaPos.toLowerCase().includes(monthName.toLowerCase()))
             ));
 
@@ -3002,7 +3293,7 @@ function respondOutput(obj, callback) {
                     id: billId,
                     nis: st.nis,
                     posId: posBulanan.id || 'POS1',
-                    namaPos: billNama,
+                    namaPos: `SPP ${monthName}`,
                     kategori: 'Bulanan',
                     nominal: posBulanan.nominal || 300000,
                     dibayar: 0,
@@ -3012,71 +3303,250 @@ function respondOutput(obj, callback) {
                 saveState();
             }
 
-            if (bill.status === 'Lunas' || bill.dibayar >= bill.nominal) {
+            if (bill.dibayar >= bill.nominal) {
                 const paidTrx = (state.transactions || []).find(t => t.nis === nis && (
                     t.posNama === bill.namaPos || 
                     (t.posNama && t.posNama.toLowerCase().includes(monthName.toLowerCase()))
                 ));
+                if (paidTrx) {
+                    showKwitansiModal(paidTrx, st);
+                } else {
+                    Swal.fire(`SPP ${monthName} Lunas`, 'Tagihan bulan ini sudah lunas.', 'info');
+                }
+                return;
+            }
+
+            openModalBayarMulti([bill.id], nis);
+        }
+
+        function openModalBayarMulti(billIds = null, nis = null) {
+            if (!nis) nis = selectedTrxStudentNis;
+            if (!billIds) billIds = selectedTrxBillIds;
+
+            if (!billIds || billIds.length === 0) {
                 Swal.fire({
-                    title: `SPP ${monthName} Lunas`,
-                    html: `<p class="text-sm text-slate-600">Tagihan SPP bulan <b>${monthName}</b> untuk siswa <b>${st.nama}</b> sudah lunas (Rp ${bill.nominal.toLocaleString('id-ID')}).</p>`,
-                    icon: 'success',
-                    showCancelButton: !!paidTrx,
-                    confirmButtonText: paidTrx ? 'Lihat / Cetak Kwitansi' : 'OK',
-                    cancelButtonText: 'Tutup'
-                }).then((res) => {
-                    if (res.isConfirmed && paidTrx) {
-                        showKwitansiModal(paidTrx, st);
-                    }
+                    title: 'Pilih Tagihan',
+                    text: 'Silakan pilih atau centang minimal 1 tagihan pada matriks untuk diproses pembayarannya.',
+                    icon: 'warning'
                 });
                 return;
             }
 
-            openModalBayar(bill.id, st.nis);
+            const st = state.students.find(s => s.nis === nis);
+            if (!st) {
+                Swal.fire('Error', 'Data santri tidak ditemukan!', 'error');
+                return;
+            }
+
+            const targetBills = (state.bills || []).filter(b => billIds.includes(b.id) && b.nis === nis);
+            if (targetBills.length === 0) {
+                Swal.fire('Error', 'Tagihan yang dipilih tidak ditemukan atau bukan milik santri ini.', 'error');
+                return;
+            }
+
+            activeModalBillIds = targetBills.map(b => b.id);
+            document.getElementById('modal-bayar-nis').value = st.nis;
+            document.getElementById('modal-bayar-siswa-info').innerText = `Santri: ${st.nama} (${st.kelas}) | NIS: ${st.nis} | Wali: ${st.ayah}`;
+            document.getElementById('modal-bayar-items-count').innerText = `${targetBills.length} Pos Dipilih`;
+
+            // Render form cards untuk setiap pos tagihan terpilih
+            const container = document.getElementById('modal-bayar-items-container');
+            container.innerHTML = targetBills.map(b => {
+                const sisaSaatIni = Math.max(0, b.nominal - b.dibayar);
+                const katBadgeClass = b.kategori === 'Bulanan' 
+                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' 
+                    : 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300';
+
+                return `
+                    <div class="p-3 bg-slate-50 dark:bg-slate-700/60 rounded-xl border border-slate-200 dark:border-slate-600 space-y-2 bill-pay-row" id="row-pay-${b.id}">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="font-bold text-xs text-slate-800 dark:text-slate-100 block">${b.namaPos}</span>
+                                <div class="text-[11px] text-slate-500 space-x-2 mt-0.5">
+                                    <span>Total: <b>Rp ${b.nominal.toLocaleString('id-ID')}</b></span>
+                                    <span>•</span>
+                                    <span>Sudah Bayar: <b class="text-emerald-600">Rp ${b.dibayar.toLocaleString('id-ID')}</b></span>
+                                    <span>•</span>
+                                    <span>Sisa Saat Ini: <b class="text-rose-600" id="sisa-asal-${b.id}">Rp ${sisaSaatIni.toLocaleString('id-ID')}</b></span>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded ${katBadgeClass}">${b.kategori}</span>
+                        </div>
+
+                        <!-- Input Nominal Cicil / Bayar & Live Balance Correction -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-200/80 dark:border-slate-600 items-center">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    Nominal Yang Dibayar / Dicicil:
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-2.5 top-2 text-xs font-bold text-slate-400">Rp</span>
+                                    <input type="number" 
+                                           id="input-pay-${b.id}" 
+                                           value="${sisaSaatIni}" 
+                                           max="${sisaSaatIni}" 
+                                           min="0"
+                                           oninput="onMultiBillInputChange('${b.id}')"
+                                           class="w-full pl-8 pr-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-brand-500 outline-none">
+                                </div>
+                                <div class="flex space-x-1 mt-1.5">
+                                    <button type="button" onclick="setBillPayAmount('${b.id}', ${sisaSaatIni})" class="text-[10px] px-1.5 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 font-bold rounded border border-emerald-200 dark:border-emerald-800">[Lunas Penuh]</button>
+                                    <button type="button" onclick="setBillPayAmount('${b.id}', ${Math.round(sisaSaatIni / 2)})" class="text-[10px] px-1.5 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 font-bold rounded border border-amber-200 dark:border-amber-800">[50%]</button>
+                                    <button type="button" onclick="setBillPayAmount('${b.id}', 0)" class="text-[10px] px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300 font-bold rounded border border-slate-200 dark:border-slate-700">[Kosongkan]</button>
+                                </div>
+                            </div>
+
+                            <!-- REAL-TIME BALANCE & STATUS CORRECTION -->
+                            <div class="bg-white dark:bg-slate-800/80 p-2 rounded-lg border border-slate-200 dark:border-slate-700">
+                                <span class="text-[10px] text-slate-400 block font-semibold">Koreksi Sisa Kurangan Baru:</span>
+                                <div id="status-koreksi-${b.id}" class="mt-0.5">
+                                    <!-- Di-update real-time via JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Inisialisasi perhitungan koreksi real-time untuk setiap item
+            activeModalBillIds.forEach(id => onMultiBillInputChange(id));
+
+            // Reset kalkulator uang tunai
+            const cashInput = document.getElementById('modal-bayar-cash-received');
+            if (cashInput) cashInput.value = '';
+            document.getElementById('modal-bayar-ket').value = '';
+
+            // Buka Modal
+            document.getElementById('modal-bayar').classList.remove('hidden');
         }
 
-        function openModalBayar(billId, nis) {
-            const bill = state.bills.find(b => b.id === billId);
-            const st = state.students.find(s => s.nis === nis);
-            if(!bill || !st) return;
+        /* REAL-TIME INSTALLMENT & SISA KURANGAN CORRECTION HANDLER */
+        function onMultiBillInputChange(billId) {
+            const bill = (state.bills || []).find(b => b.id === billId);
+            if (!bill) return;
 
-            document.getElementById('modal-bayar-id-tagihan').value = bill.id;
-            document.getElementById('modal-bayar-nis').value = st.nis;
-            document.getElementById('modal-bayar-siswa-info').innerText = `${st.nama} (${st.kelas})`;
-            
-            const remaining = bill.nominal - bill.dibayar;
-            document.getElementById('modal-bayar-pos-info').innerText = `${bill.namaPos} - Sisa Tagihan: Rp ${remaining.toLocaleString('id-ID')}`;
-            document.getElementById('modal-bayar-nominal').value = remaining;
+            const sisaSaatIni = Math.max(0, bill.nominal - bill.dibayar);
+            const inputEl = document.getElementById(`input-pay-${billId}`);
+            const statusEl = document.getElementById(`status-koreksi-${billId}`);
+            if (!inputEl || !statusEl) return;
 
-            document.getElementById('modal-bayar').classList.remove('hidden');
+            const payVal = parseInt(inputEl.value) || 0;
+            const sisaBaru = sisaSaatIni - payVal;
+
+            if (payVal > sisaSaatIni) {
+                statusEl.innerHTML = `
+                    <div class="p-1 bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 rounded text-[11px] font-bold flex items-center">
+                        <i class="fa-solid fa-triangle-exclamation mr-1 text-rose-500"></i>
+                        <span>Melebihi sisa tagihan! (Maks: Rp ${sisaSaatIni.toLocaleString('id-ID')})</span>
+                    </div>
+                `;
+                inputEl.classList.add('border-rose-500', 'text-rose-600');
+            } else if (sisaBaru === 0 && payVal > 0) {
+                statusEl.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 text-xs font-bold rounded inline-flex items-center">
+                            <i class="fa-solid fa-circle-check mr-1 text-emerald-600"></i> LUNAS
+                        </span>
+                        <span class="text-xs font-black text-emerald-600 dark:text-emerald-400">Sisa: Rp 0</span>
+                    </div>
+                `;
+                inputEl.classList.remove('border-rose-500', 'text-rose-600');
+            } else if (payVal === 0) {
+                statusEl.innerHTML = `
+                    <span class="text-xs font-medium text-slate-400">Dilewati (Sisa tetap: Rp ${sisaSaatIni.toLocaleString('id-ID')})</span>
+                `;
+                inputEl.classList.remove('border-rose-500', 'text-rose-600');
+            } else {
+                // Dicicil: kurangan langsung terkoreksi di layar!
+                statusEl.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="px-2 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 text-[11px] font-bold rounded inline-flex items-center">
+                            <i class="fa-solid fa-clock-rotate-left mr-1 text-amber-600"></i> Dicicil
+                        </span>
+                        <span class="text-xs font-black text-rose-600 dark:text-rose-400">
+                            Sisa Kurang: Rp ${sisaBaru.toLocaleString('id-ID')}
+                        </span>
+                    </div>
+                `;
+                inputEl.classList.remove('border-rose-500', 'text-rose-600');
+            }
+
+            // Recalculate total sum & live student remaining debt
+            recalculateMultiPayment();
+        }
+
+        function setBillPayAmount(billId, amount) {
+            const inputEl = document.getElementById(`input-pay-${billId}`);
+            if (inputEl) {
+                inputEl.value = amount;
+                onMultiBillInputChange(billId);
+            }
+        }
+
+        function recalculateMultiPayment() {
+            let totalBayarSemua = 0;
+            activeModalBillIds.forEach(id => {
+                const inp = document.getElementById(`input-pay-${id}`);
+                if (inp) {
+                    const v = parseInt(inp.value) || 0;
+                    if (v > 0) totalBayarSemua += v;
+                }
+            });
+
+            // Update Total Nominal & Terbilang
+            const totalEl = document.getElementById('modal-bayar-total-nominal');
+            const terbilangEl = document.getElementById('modal-bayar-terbilang-preview');
+            if (totalEl) totalEl.innerText = `Rp ${totalBayarSemua.toLocaleString('id-ID')}`;
+            if (terbilangEl) {
+                terbilangEl.innerText = totalBayarSemua > 0 ? `# ${terbilangRupiah(totalBayarSemua)} Rupiah #` : '# Nol Rupiah #';
+            }
+
+            // Hitung total sisa tunggakan santri secara menyeluruh setelah transaksi ini
+            const nis = document.getElementById('modal-bayar-nis').value;
+            const stBills = (state.bills || []).filter(b => b.nis === nis);
+            let totalTunggakanAwal = 0;
+            stBills.forEach(b => { totalTunggakanAwal += Math.max(0, b.nominal - b.dibayar); });
+            const newTunggakan = Math.max(0, totalTunggakanAwal - totalBayarSemua);
+
+            const sisaSiswaEl = document.getElementById('modal-bayar-sisa-siswa-preview');
+            if (sisaSiswaEl) {
+                sisaSiswaEl.innerText = `Rp ${newTunggakan.toLocaleString('id-ID')}`;
+            }
+
+            // Update cash calculator
+            calculateCashChange();
         }
 
         function closeModalBayar() {
             document.getElementById('modal-bayar').classList.add('hidden');
+            activeModalBillIds = [];
         }
-
 
         /* CASH CALCULATOR & HELPER METODE BAYAR */
         function toggleMetodeBayarFields() {
             const metode = document.getElementById('modal-bayar-metode').value;
-            const cashSec = document.getElementById('modal-bayar-cash-section');
-            const tfSec = document.getElementById('modal-bayar-transfer-section');
+            const cashSection = document.getElementById('modal-bayar-cash-section');
+            const transferSection = document.getElementById('modal-bayar-transfer-section');
+
             if (metode === 'Cash / Tunai') {
-                if (cashSec) cashSec.classList.remove('hidden');
-                if (tfSec) tfSec.classList.add('hidden');
+                cashSection.classList.remove('hidden');
+                transferSection.classList.add('hidden');
+                calculateCashChange();
+            } else if (metode === 'Transfer Bank') {
+                cashSection.classList.add('hidden');
+                transferSection.classList.remove('hidden');
             } else {
-                if (cashSec) cashSec.classList.add('hidden');
-                if (tfSec) tfSec.classList.remove('hidden');
+                cashSection.classList.add('hidden');
+                transferSection.classList.add('hidden');
             }
-            calculateCashChange();
         }
 
         function calculateCashChange() {
-            const nominal = parseInt(document.getElementById('modal-bayar-nominal').value) || 0;
-            const terbilangEl = document.getElementById('modal-bayar-terbilang-preview');
-            if (terbilangEl) {
-                terbilangEl.innerText = nominal > 0 ? `# ${terbilangRupiah(nominal)} Rupiah #` : '# Nol Rupiah #';
-            }
+            let totalBayar = 0;
+            activeModalBillIds.forEach(id => {
+                const inp = document.getElementById(`input-pay-${id}`);
+                if (inp) totalBayar += Math.max(0, parseInt(inp.value) || 0);
+            });
 
             const metode = document.getElementById('modal-bayar-metode') ? document.getElementById('modal-bayar-metode').value : 'Cash / Tunai';
             if (metode === 'Cash / Tunai') {
@@ -3085,8 +3555,8 @@ function respondOutput(obj, callback) {
                 if (!receivedInput || !changeEl) return;
                 
                 const received = parseInt(receivedInput.value) || 0;
-                const change = received - nominal;
-                if (received === 0 && nominal === 0) {
+                const change = received - totalBayar;
+                if (received === 0 && totalBayar === 0) {
                     changeEl.innerText = 'Rp 0';
                     changeEl.className = 'text-base font-black text-slate-500';
                 } else if (change >= 0) {
@@ -3100,10 +3570,14 @@ function respondOutput(obj, callback) {
         }
 
         function setCashExact() {
-            const nominal = parseInt(document.getElementById('modal-bayar-nominal').value) || 0;
+            let totalBayar = 0;
+            activeModalBillIds.forEach(id => {
+                const inp = document.getElementById(`input-pay-${id}`);
+                if (inp) totalBayar += Math.max(0, parseInt(inp.value) || 0);
+            });
             const receivedInput = document.getElementById('modal-bayar-cash-received');
             if (receivedInput) {
-                receivedInput.value = nominal;
+                receivedInput.value = totalBayar;
                 calculateCashChange();
             }
         }
@@ -3117,122 +3591,171 @@ function respondOutput(obj, callback) {
             }
         }
 
+        /* EKSEKUSI PEMBAYARAN MULTI-BILL & REAL-TIME UPDATE */
         function executePaymentSubmit(e) {
             e.preventDefault();
-            const billId = document.getElementById('modal-bayar-id-tagihan').value;
             const nis = document.getElementById('modal-bayar-nis').value;
-            const nominalPay = parseInt(document.getElementById('modal-bayar-nominal').value) || 0;
             const metode = document.getElementById('modal-bayar-metode').value;
             const ket = document.getElementById('modal-bayar-ket').value;
-
-            const bill = state.bills.find(b => b.id === billId);
             const st = state.students.find(s => s.nis === nis);
 
-            if (!bill || !st) {
-                Swal.fire('Error', 'Data tagihan atau santri tidak ditemukan!', 'error');
+            if (!st) {
+                Swal.fire('Error', 'Data santri tidak ditemukan!', 'error');
                 return;
             }
 
-            if (nominalPay <= 0) {
-                Swal.fire('Nominal Tidak Valid', 'Nominal pembayaran harus lebih besar dari Rp 0!', 'error');
+            // Kumpulkan tagihan yang memiliki nominal bayar > 0
+            const itemsToPay = [];
+            let totalNominalPay = 0;
+
+            for (const billId of activeModalBillIds) {
+                const bill = (state.bills || []).find(b => b.id === billId);
+                if (!bill) continue;
+
+                const inp = document.getElementById(`input-pay-${billId}`);
+                const nominalPay = parseInt(inp ? inp.value : '0') || 0;
+                if (nominalPay <= 0) continue;
+
+                const sisa = Math.max(0, bill.nominal - bill.dibayar);
+                if (nominalPay > sisa) {
+                    Swal.fire('Nominal Melebihi Tagihan', `Nominal bayar untuk "${bill.namaPos}" (Rp ${nominalPay.toLocaleString('id-ID')}) melebihi sisa tagihan (Rp ${sisa.toLocaleString('id-ID')}).`, 'warning');
+                    return;
+                }
+
+                itemsToPay.push({
+                    bill: bill,
+                    nominalPay: nominalPay,
+                    sisaBaru: sisa - nominalPay
+                });
+                totalNominalPay += nominalPay;
+            }
+
+            if (itemsToPay.length === 0) {
+                Swal.fire('Nominal Kosong', 'Silakan masukkan nominal pembayaran lebih dari Rp 0 untuk minimal satu pos tagihan.', 'warning');
                 return;
             }
 
-            const sisa = bill.nominal - bill.dibayar;
-            if (nominalPay > sisa) {
-                Swal.fire('Melebihi Tagihan', `Nominal pembayaran (Rp ${nominalPay.toLocaleString('id-ID')}) melebihi sisa tagihan (Rp ${sisa.toLocaleString('id-ID')}).`, 'warning');
-                return;
-            }
-
-            let uangDiterima = nominalPay;
+            let uangDiterima = totalNominalPay;
             let kembalian = 0;
             let bankRef = '';
 
             if (metode === 'Cash / Tunai') {
                 const receivedInput = document.getElementById('modal-bayar-cash-received');
-                uangDiterima = parseInt(receivedInput ? receivedInput.value : nominalPay) || 0;
-                if (uangDiterima < nominalPay) {
-                    const kurang = nominalPay - uangDiterima;
+                uangDiterima = parseInt(receivedInput ? receivedInput.value : totalNominalPay) || 0;
+                if (uangDiterima < totalNominalPay) {
+                    const kurang = totalNominalPay - uangDiterima;
                     Swal.fire('Uang Kurang', `Uang tunai yang diterima kurang Rp ${kurang.toLocaleString('id-ID')}.`, 'warning');
                     return;
                 }
-                kembalian = uangDiterima - nominalPay;
+                kembalian = uangDiterima - totalNominalPay;
             } else if (metode === 'Transfer Bank') {
                 const bankRefInput = document.getElementById('modal-bayar-bank-ref');
                 bankRef = bankRefInput ? bankRefInput.value.trim() : '';
             }
 
-            // Update bill status di client
-            bill.dibayar += nominalPay;
-            bill.status = bill.dibayar >= bill.nominal ? 'Lunas' : 'Cicilan';
-
-            // Generate Client Idempotency Key & Transaction ID
-            const idempotencyKey = 'IDEMP-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+            // Generate Satu Nomor Kwitansi Resmi Bersama untuk Multi Pos
             const todayStr = new Date().toISOString().slice(0, 10);
             const todayPrefix = todayStr.replace(/-/g, '');
             const existingTodayCount = (state.transactions || []).filter(t => t.tanggal === todayStr).length;
             const kwtNo = `KWT-${todayPrefix}-${String(existingTodayCount + 1).padStart(4, '0')}`;
             const bendaharaName = (state.schoolInfo && state.schoolInfo.bendahara) ? state.schoolInfo.bendahara : 'Ust. Yuli';
 
-            const newTrx = {
-                id: 'TRX-' + UtilitiesUUID(),
-                idempotencyKey: idempotencyKey,
-                kwitansiNo: kwtNo,
-                tanggal: todayStr,
-                nis: st.nis,
-                namaSiswa: st.nama,
-                posId: bill.posId,
-                posNama: bill.namaPos,
-                nominal: nominalPay,
-                metode: metode,
-                uangDiterima: uangDiterima,
-                kembalian: kembalian,
-                bankRef: bankRef,
-                keterangan: ket,
-                petugas: bendaharaName,
-                status: 'SUCCESS'
-            };
-
+            // Catat transaksi per pos terpilih & perbarui saldo tagihan
+            const createdTransactions = [];
             if (!state.transactions) state.transactions = [];
-            state.transactions.unshift(newTrx);
 
-            // Audit log
+            itemsToPay.forEach((item, idx) => {
+                const bill = item.bill;
+                const nominalPay = item.nominalPay;
+
+                // Update bill status di client (Cicilan jika belum lunas)
+                bill.dibayar += nominalPay;
+                bill.status = bill.dibayar >= bill.nominal ? 'Lunas' : 'Cicilan';
+
+                const idempotencyKey = 'IDEMP-' + Date.now() + '-' + idx + '-' + Math.random().toString(36).substring(2, 7);
+                const itemKet = item.sisaBaru > 0 
+                    ? `Dicicil (Sisa Kurang: Rp ${item.sisaBaru.toLocaleString('id-ID')})${ket ? ' - ' + ket : ''}`
+                    : (ket || 'Lunas');
+
+                const newTrx = {
+                    id: 'TRX-' + UtilitiesUUID(),
+                    idempotencyKey: idempotencyKey,
+                    kwitansiNo: kwtNo,
+                    tanggal: todayStr,
+                    nis: st.nis,
+                    namaSiswa: st.nama,
+                    posId: bill.posId,
+                    posNama: bill.namaPos,
+                    nominal: nominalPay,
+                    metode: metode,
+                    uangDiterima: uangDiterima,
+                    kembalian: kembalian,
+                    bankRef: bankRef,
+                    keterangan: itemKet,
+                    petugas: bendaharaName,
+                    status: 'SUCCESS'
+                };
+
+                state.transactions.unshift(newTrx);
+                createdTransactions.push(newTrx);
+
+                // Sinkronisasi ke Google Apps Script backend secara idempotent
+                syncToSpreadsheet('PAYMENT', {
+                    idempotencyKey: idempotencyKey,
+                    billId: bill.id,
+                    studentId: st.nis,
+                    namaSiswa: st.nama,
+                    posId: bill.posId,
+                    posNama: bill.namaPos,
+                    nominal: nominalPay,
+                    metode: metode,
+                    uangDiterima: uangDiterima,
+                    kembalian: kembalian,
+                    petugas: bendaharaName,
+                    kwitansiNo: kwtNo,
+                    keterangan: itemKet,
+                    role: state.activeRole
+                });
+            });
+
+            // Audit log multi-bill checkout
             if (!state.logs) state.logs = [];
             state.logs.unshift({
                 waktu: new Date().toLocaleString('id-ID'),
                 user: (state.loggedInUser && state.loggedInUser.name) || bendaharaName,
                 role: state.activeRole,
-                aksi: 'PEMBAYARAN',
-                detail: `Pembayaran ${bill.namaPos} Rp ${nominalPay.toLocaleString('id-ID')} untuk ${st.nama} (${kwtNo})`,
+                aksi: 'PEMBAYARAN_MULTI',
+                detail: `Pembayaran ${itemsToPay.length} pos total Rp ${totalNominalPay.toLocaleString('id-ID')} untuk ${st.nama} (${kwtNo})`,
                 device: 'Web App'
             });
 
-            closeModalBayar();
+            // Simpan State lokal
             saveState();
 
-            // Kirim ke Google Apps Script backend secara idempotent
-            syncToSpreadsheet('PAYMENT', {
-                idempotencyKey: idempotencyKey,
-                billId: bill.id,
-                studentId: st.nis,
-                namaSiswa: st.nama,
-                posId: bill.posId,
-                posNama: bill.namaPos,
-                nominal: nominalPay,
-                metode: metode,
-                uangDiterima: uangDiterima,
-                kembalian: kembalian,
-                petugas: bendaharaName,
-                kwitansiNo: kwtNo,
-                keterangan: ket,
-                role: state.activeRole
-            });
+            // Reset seleksi tagihan
+            selectedTrxBillIds = [];
 
+            // Tutup Modal Bayar
+            closeModalBayar();
+
+            // Refresh Dashboard & Matriks Tagihan Siswa
             renderDashboard();
             selectStudentForPayment(nis);
 
-            // Buka Kwitansi Resmi dengan Real QR Code
-            showKwitansiModal(newTrx, st);
+            // Tampilkan Kwitansi Resmi Gabungan Secara Langsung
+            if (createdTransactions.length > 0) {
+                showKwitansiModal(createdTransactions[0], st);
+            }
+
+            // Tampilkan notifikasi toast sukses
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: `Pembayaran ${itemsToPay.length} pos berhasil diproses!`,
+                showConfirmButton: false,
+                timer: 3500
+            });
         }
 
         function UtilitiesUUID() {
@@ -4002,12 +4525,34 @@ function respondOutput(obj, callback) {
                 return;
             }
             const { trx, student } = activeKwitansiData;
-            const terbilangText = terbilangRupiah(trx.nominal) + " Rupiah";
+            const kwtItems = (state.transactions || []).filter(t => t.kwitansiNo === trx.kwitansiNo);
+            const totalNominal = kwtItems.length > 0 ? kwtItems.reduce((sum, item) => sum + item.nominal, 0) : trx.nominal;
+            const terbilangText = terbilangRupiah(totalNominal) + " Rupiah";
             const tanggalIndo = formatTanggalIndo(trx.tanggal);
             const namaSekolah = state.schoolInfo.nama || 'SMP MQ AL HUDA BINANGUN';
             const alamatSekolah = state.schoolInfo.alamat || 'Jl. Butsi RT 16 RW 06 Desa Sidayu Kec. Binangun';
             const telpSekolah = state.schoolInfo.telepon || '-';
             const bendahara = state.schoolInfo.bendahara || trx.petugas;
+
+            // Rincian Baris Tabel Tagihan yang Dibayar
+            const itemsRowsHtml = kwtItems.length > 0 
+                ? kwtItems.map((item, idx) => `
+                    <tr style="border-bottom:1px solid #e2e8f0;">
+                        <td style="padding:6px 8px;text-align:center;">${idx + 1}</td>
+                        <td style="padding:6px 8px;font-weight:600;color:#0f172a;">
+                            ${item.posNama}
+                            ${item.keterangan ? `<div style="font-size:10px;color:#64748b;font-style:italic;">${item.keterangan}</div>` : ''}
+                        </td>
+                        <td style="padding:6px 8px;text-align:right;font-weight:bold;color:#0f172a;">Rp ${item.nominal.toLocaleString('id-ID')}</td>
+                    </tr>
+                `).join('')
+                : `
+                    <tr style="border-bottom:1px solid #e2e8f0;">
+                        <td style="padding:6px 8px;text-align:center;">1</td>
+                        <td style="padding:6px 8px;font-weight:600;color:#0f172a;">${trx.posNama}</td>
+                        <td style="padding:6px 8px;text-align:right;font-weight:bold;color:#0f172a;">Rp ${trx.nominal.toLocaleString('id-ID')}</td>
+                    </tr>
+                `;
 
             const html = `
                 <div class="kwitansi-sheet">
@@ -4032,54 +4577,58 @@ function respondOutput(obj, callback) {
                         <h2>KWITANSI RESMI PEMBAYARAN SISWA</h2>
                     </div>
 
-                    <!-- DATA PEMBAYARAN -->
-                    <table class="field-table">
+                    <!-- DATA SISWA -->
+                    <table class="field-table" style="margin-bottom:10px;">
                         <tr>
                             <td style="width:160px;color:#475569;">Telah Terima Dari</td>
                             <td style="width:10px;">:</td>
-                            <td style="font-weight:bold;font-size:14px;color:#0f172a;">${student.nama}</td>
+                            <td style="font-weight:bold;font-size:13px;color:#0f172a;">${student.nama}</td>
                         </tr>
                         <tr>
-                            <td style="color:#475569;">NIS / NISN</td>
+                            <td style="color:#475569;">NIS / Kelas</td>
                             <td>:</td>
-                            <td style="font-family:monospace;font-weight:600;">${student.nis} / ${student.nisn || '-'}</td>
+                            <td style="font-family:monospace;font-weight:600;">${student.nis} / ${student.kelas}</td>
                         </tr>
                         <tr>
-                            <td style="color:#475569;">Kelas</td>
-                            <td>:</td>
-                            <td style="font-weight:600;">${student.kelas}</td>
-                        </tr>
-                        <tr>
-                            <td style="color:#475569;">Nama Orang Tua / Wali</td>
+                            <td style="color:#475569;">Wali Murid</td>
                             <td>:</td>
                             <td>${student.ayah || '-'}</td>
                         </tr>
                         <tr>
-                            <td style="color:#475569;">Untuk Pembayaran</td>
+                            <td style="color:#475569;">Metode Bayar</td>
                             <td>:</td>
-                            <td style="font-weight:bold;color:#0369a1;">${trx.posNama}</td>
-                        </tr>
-                        <tr>
-                            <td style="color:#475569;">Metode Pembayaran</td>
-                            <td>:</td>
-                            <td>${trx.metode} ${trx.keterangan ? `<span style="color:#64748b;">(Ket: ${trx.keterangan})</span>` : ''}</td>
+                            <td>${trx.metode}</td>
                         </tr>
                     </table>
 
+                    <!-- TABEL RINCIAN POS PEMBAYARAN (MULTI POS) -->
+                    <table style="width:100%;border-collapse:collapse;margin:10px 0;font-size:11px;">
+                        <thead>
+                            <tr style="background:#f1f5f9;border-top:1px solid #cbd5e1;border-bottom:1px solid #cbd5e1;">
+                                <th style="padding:6px 8px;text-align:center;width:30px;">No</th>
+                                <th style="padding:6px 8px;text-align:left;">Uraian Pos Tagihan</th>
+                                <th style="padding:6px 8px;text-align:right;width:140px;">Jumlah Dibayar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsRowsHtml}
+                        </tbody>
+                    </table>
+
                     <!-- KOTAK JUMLAH & TERBILANG -->
-                    <div class="box-terbilang">
+                    <div class="box-terbilang" style="margin-top:8px;">
                         <div style="flex:1;padding-right:20px;">
                             <span style="font-size:10px;font-weight:bold;text-transform:uppercase;color:#64748b;display:block;">Terbilang:</span>
                             <p style="margin:4px 0 0 0;font-style:italic;font-weight:bold;color:#1e293b;background:#fff;padding:6px 10px;border-radius:4px;border:1px dashed #cbd5e1;"># ${terbilangText} #</p>
                         </div>
                         <div style="text-align:right;">
-                            <span style="font-size:10px;font-weight:bold;text-transform:uppercase;color:#64748b;display:block;">Jumlah Dibayar:</span>
-                            <p style="margin:4px 0 0 0;font-size:22px;font-weight:900;color:#047857;">Rp ${trx.nominal.toLocaleString('id-ID')}</p>
+                            <span style="font-size:10px;font-weight:bold;text-transform:uppercase;color:#64748b;display:block;">Total Pembayaran:</span>
+                            <p style="margin:4px 0 0 0;font-size:20px;font-weight:900;color:#047857;">Rp ${totalNominal.toLocaleString('id-ID')}</p>
                         </div>
                     </div>
 
                     <!-- TANDA TANGAN & PENGESAHAN -->
-                    <div class="ttd-grid">
+                    <div class="ttd-grid" style="margin-top:12px;">
                         <div style="text-align:center;">
                             <div style="width:65px;height:65px;border:1px solid #cbd5e1;padding:2px;border-radius:6px;margin:0 auto;background:#fff;">
                                 <svg viewBox="0 0 100 100" style="width:100%;height:100%;fill:#1e293b;">
@@ -4106,20 +4655,14 @@ function respondOutput(obj, callback) {
 
                         <div style="text-align:center;min-width:220px;">
                             <p style="margin:0;font-size:12px;color:#475569;">Binangun, ${tanggalIndo}</p>
-                            <p style="margin:4px 0 55px 0;font-size:12px;color:#475569;">Bendahara Sekolah,</p>
+                            <p style="margin:4px 0 50px 0;font-size:12px;color:#475569;">Bendahara Sekolah,</p>
                             <p style="margin:0;font-weight:bold;font-size:13px;color:#0f172a;text-decoration:underline;">${bendahara}</p>
                         </div>
-                    </div>
-
-                    <!-- CATATAN KAKI -->
-                    <div class="footer-note">
-                        <span>* Simpan kwitansi ini sebagai bukti pembayaran yang sah.</span>
-                        <span>Dicetak pada: ${new Date().toLocaleString('id-ID')}</span>
                     </div>
                 </div>
             `;
 
-            printHtmlDocument(html, `Kwitansi-${trx.kwitansiNo}-${student.nama}`);
+            printHtmlViaIframe(html);
         }
 
         function showKwitansiModal(trx, student) {
@@ -4129,12 +4672,40 @@ function respondOutput(obj, callback) {
             document.getElementById('kwt-siswa-detail').innerText = `NIS: ${student.nis} | Kelas: ${student.kelas}`;
             document.getElementById('kwt-tanggal').innerText = formatTanggalIndo(trx.tanggal);
             document.getElementById('kwt-metode').innerText = `Metode: ${trx.metode}`;
-            document.getElementById('kwt-item-nama').innerText = trx.posNama;
-            document.getElementById('kwt-item-nominal').innerText = `Rp ${trx.nominal.toLocaleString('id-ID')}`;
-            document.getElementById('kwt-total-nominal').innerText = `Rp ${trx.nominal.toLocaleString('id-ID')}`;
-            if(document.getElementById('kwt-terbilang')) {
-                document.getElementById('kwt-terbilang').innerText = `# ${terbilangRupiah(trx.nominal)} Rupiah #`;
+
+            // Cari seluruh item transaksi yang tergabung dalam kwitansi ini
+            const kwtItems = (state.transactions || []).filter(t => t.kwitansiNo === trx.kwitansiNo);
+            const totalNominal = kwtItems.length > 0 
+                ? kwtItems.reduce((sum, item) => sum + item.nominal, 0) 
+                : trx.nominal;
+
+            const tbody = document.getElementById('kwt-items-tbody');
+            if (tbody) {
+                if (kwtItems.length > 0) {
+                    tbody.innerHTML = kwtItems.map((item, idx) => `
+                        <tr class="border-b border-slate-200">
+                            <td class="p-2">
+                                <span class="font-bold text-slate-800 block">${idx + 1}. ${item.posNama}</span>
+                                ${item.keterangan ? `<span class="block text-[10px] text-slate-500 italic mt-0.5">${item.keterangan}</span>` : ''}
+                            </td>
+                            <td class="p-2 text-right font-bold text-slate-900 whitespace-nowrap">Rp ${item.nominal.toLocaleString('id-ID')}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = `
+                        <tr class="border-b border-slate-200">
+                            <td class="p-2 font-bold text-slate-800">${trx.posNama}</td>
+                            <td class="p-2 text-right font-bold text-slate-900 whitespace-nowrap">Rp ${trx.nominal.toLocaleString('id-ID')}</td>
+                        </tr>
+                    `;
+                }
             }
+
+            document.getElementById('kwt-total-nominal').innerText = `Rp ${totalNominal.toLocaleString('id-ID')}`;
+            if(document.getElementById('kwt-terbilang')) {
+                document.getElementById('kwt-terbilang').innerText = `# ${terbilangRupiah(totalNominal)} Rupiah #`;
+            }
+
             const bendaharaName = (state.schoolInfo && state.schoolInfo.bendahara) ? state.schoolInfo.bendahara : 'Ust. Yuli';
             document.getElementById('kwt-petugas').innerText = bendaharaName;
             if(document.getElementById('kwt-petugas-title')) {
@@ -4174,7 +4745,7 @@ function respondOutput(obj, callback) {
         }
 
         function reprintKwitansi(kwitansiNo) {
-            const trx = state.transactions.find(t => t.kwitansiNo === kwitansiNo);
+            const trx = (state.transactions || []).find(t => t.kwitansiNo === kwitansiNo);
             if(!trx) return;
             const st = state.students.find(s => s.nis === trx.nis);
             showKwitansiModal(trx, st);
