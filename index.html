@@ -549,15 +549,19 @@
                             
                             <!-- Action buttons: Share, Download & Print Invoice -->
                             <div class="flex flex-wrap gap-2 pt-2 sm:pt-0">
-                                <button onclick="openModalInvoiceTagihan(selectedTrxStudentNis)" class="px-3 py-1.5 bg-white/15 hover:bg-white/25 text-white text-xs font-semibold rounded-lg backdrop-blur-sm border border-white/20 transition flex items-center space-x-1.5">
+                                <button type="button" onclick="openModalInvoiceTagihan(selectedTrxStudentNis)" class="px-3 py-1.5 bg-white/15 hover:bg-white/25 text-white text-xs font-semibold rounded-lg backdrop-blur-sm border border-white/20 transition flex items-center space-x-1.5" title="Lihat Rekap Tagihan">
                                     <i class="fa-solid fa-file-invoice text-amber-300"></i>
                                     <span>Slip Tagihan</span>
                                 </button>
-                                <button onclick="shareTagihanWhatsApp(selectedTrxStudentNis)" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow-sm transition flex items-center space-x-1.5">
+                                <button type="button" onclick="shareTagihanWhatsApp(selectedTrxStudentNis)" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow-sm transition flex items-center space-x-1.5" title="Kirim Tagihan via WhatsApp">
                                     <i class="fa-brands fa-whatsapp text-sm"></i>
                                     <span>Kirim WA</span>
                                 </button>
-                                <button onclick="printRincianTagihan(selectedTrxStudentNis)" class="px-3 py-1.5 bg-slate-900/40 hover:bg-slate-900/60 text-white text-xs font-semibold rounded-lg backdrop-blur-sm border border-white/20 transition flex items-center space-x-1.5">
+                                <button type="button" onclick="scrollToStudentTrxHistory()" class="px-3 py-1.5 bg-white/15 hover:bg-white/25 text-white text-xs font-semibold rounded-lg backdrop-blur-sm border border-white/20 transition flex items-center space-x-1.5" title="Lihat Riwayat Pembayaran Siswa">
+                                    <i class="fa-solid fa-clock-rotate-left text-sky-300"></i>
+                                    <span>Riwayat</span>
+                                </button>
+                                <button type="button" onclick="printRincianTagihan(selectedTrxStudentNis)" class="px-3 py-1.5 bg-slate-900/40 hover:bg-slate-900/60 text-white text-xs font-semibold rounded-lg backdrop-blur-sm border border-white/20 transition flex items-center space-x-1.5">
                                     <i class="fa-solid fa-print"></i>
                                     <span>Cetak</span>
                                 </button>
@@ -567,6 +571,88 @@
 
                     
                     
+                    
+                    <!-- 6 KPI BOX RINGKASAN KEUANGAN SISWA (PUSAT PEMBAYARAN SISWA) -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5" id="trx-financial-kpi-container">
+                        <!-- Total Tagihan -->
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 p-4 shadow-sm relative overflow-hidden group hover:shadow-md transition">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Tagihan</span>
+                                <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                                    <i class="fa-solid fa-file-invoice-dollar text-xs"></i>
+                                </div>
+                            </div>
+                            <div class="text-base sm:text-lg font-black text-slate-800 dark:text-slate-100" id="kpi-total-tagihan">Rp 0</div>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Seluruh POS TA ini</p>
+                            <div class="absolute bottom-0 left-0 right-0 h-1 bg-indigo-500 rounded-b-2xl"></div>
+                        </div>
+
+                        <!-- Sudah Dibayar -->
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 p-4 shadow-sm relative overflow-hidden group hover:shadow-md transition">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Sudah Dibayar</span>
+                                <div class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                                    <i class="fa-solid fa-circle-check text-xs"></i>
+                                </div>
+                            </div>
+                            <div class="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400" id="kpi-total-dibayar">Rp 0</div>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Total terbayar</p>
+                            <div class="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500 rounded-b-2xl"></div>
+                        </div>
+
+                        <!-- Sisa Tunggakan -->
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 p-4 shadow-sm relative overflow-hidden group hover:shadow-md transition">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[10px] font-extrabold uppercase tracking-wider text-rose-600 dark:text-rose-400">Sisa Tagihan</span>
+                                <div class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center text-rose-600 dark:text-rose-400">
+                                    <i class="fa-solid fa-hand-holding-dollar text-xs"></i>
+                                </div>
+                            </div>
+                            <div class="text-base sm:text-lg font-black text-rose-600 dark:text-rose-400" id="kpi-total-sisa">Rp 0</div>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Sisa kewajiban</p>
+                            <div class="absolute bottom-0 left-0 right-0 h-1 bg-rose-500 rounded-b-2xl"></div>
+                        </div>
+
+                        <!-- POS Lunas -->
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 p-4 shadow-sm relative overflow-hidden group hover:shadow-md transition">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">POS Lunas</span>
+                                <div class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                                    <i class="fa-solid fa-award text-xs"></i>
+                                </div>
+                            </div>
+                            <div class="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400" id="kpi-count-lunas">0 POS</div>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Tuntas 100%</p>
+                            <div class="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500 rounded-b-2xl"></div>
+                        </div>
+
+                        <!-- POS Sebagian -->
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 p-4 shadow-sm relative overflow-hidden group hover:shadow-md transition">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">POS Sebagian</span>
+                                <div class="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                                    <i class="fa-solid fa-clock-rotate-left text-xs"></i>
+                                </div>
+                            </div>
+                            <div class="text-base sm:text-lg font-black text-amber-600 dark:text-amber-400" id="kpi-count-sebagian">0 POS</div>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Sedang dicicil</p>
+                            <div class="absolute bottom-0 left-0 right-0 h-1 bg-amber-500 rounded-b-2xl"></div>
+                        </div>
+
+                        <!-- Belum Bayar -->
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 p-4 shadow-sm relative overflow-hidden group hover:shadow-md transition">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Belum Bayar</span>
+                                <div class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center text-rose-600 dark:text-rose-400">
+                                    <i class="fa-solid fa-circle-xmark text-xs"></i>
+                                </div>
+                            </div>
+                            <div class="text-base sm:text-lg font-black text-rose-600 dark:text-rose-400" id="kpi-count-belumbayar">0 POS</div>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Belum ada bayar</p>
+                            <div class="absolute bottom-0 left-0 right-0 h-1 bg-rose-500 rounded-b-2xl"></div>
+                        </div>
+                    </div>
+
                     <!-- Academic Year Switcher Bar (Section 14) -->
                     <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="flex items-center space-x-3">
@@ -600,6 +686,50 @@
                                 <p class="text-xs text-slate-500 mt-0.5">Pilih salah satu POS pembayaran santri di bawah ini untuk melihat rincian tagihan atau memproses pembayaran:</p>
                             </div>
                             <span class="text-xs font-bold text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-950/50 px-3 py-1 rounded-full border border-brand-200 dark:border-brand-800" id="mau-bayar-ta-info">TA: 2026/2027</span>
+                        </div>
+
+                        <!-- Toolbar Filter Status, Kategori & Live Search POS -->
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1 border-b border-slate-100 dark:border-slate-700/80 pb-3">
+                            <!-- Status Filter Pills -->
+                            <div class="flex flex-wrap items-center gap-1.5" id="pos-filter-status-pills">
+                                <button type="button" onclick="setPosStatusFilter('all')" id="filter-pill-all" class="pos-status-pill px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-brand-600 text-white shadow-sm">
+                                    <span>Semua</span>
+                                    <span class="px-1.5 py-0.2 bg-white/20 rounded-full text-[10px]" id="filter-count-all">0</span>
+                                </button>
+                                <button type="button" onclick="setPosStatusFilter('unpaid')" id="filter-pill-unpaid" class="pos-status-pill px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-rose-50 hover:text-rose-600">
+                                    <i class="fa-solid fa-circle text-rose-500 text-[8px]"></i>
+                                    <span>Belum Bayar</span>
+                                    <span class="px-1.5 py-0.2 bg-slate-200 dark:bg-slate-600 rounded-full text-[10px]" id="filter-count-unpaid">0</span>
+                                </button>
+                                <button type="button" onclick="setPosStatusFilter('partial')" id="filter-pill-partial" class="pos-status-pill px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-amber-50 hover:text-amber-600">
+                                    <i class="fa-solid fa-circle text-amber-500 text-[8px]"></i>
+                                    <span>Sebagian</span>
+                                    <span class="px-1.5 py-0.2 bg-slate-200 dark:bg-slate-600 rounded-full text-[10px]" id="filter-count-partial">0</span>
+                                </button>
+                                <button type="button" onclick="setPosStatusFilter('paid')" id="filter-pill-paid" class="pos-status-pill px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-emerald-50 hover:text-emerald-600">
+                                    <i class="fa-solid fa-circle text-emerald-500 text-[8px]"></i>
+                                    <span>Lunas</span>
+                                    <span class="px-1.5 py-0.2 bg-slate-200 dark:bg-slate-600 rounded-full text-[10px]" id="filter-count-paid">0</span>
+                                </button>
+                            </div>
+
+                            <!-- Kategori Dropdown & Live Search -->
+                            <div class="flex flex-col sm:flex-row items-center gap-2">
+                                <div class="w-full sm:w-auto">
+                                    <select id="pos-category-filter" onchange="onPosCategoryFilterChange(this.value)" class="w-full py-1.5 px-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-brand-500 text-slate-700 dark:text-slate-200">
+                                        <option value="all">Semua Kategori POS</option>
+                                        <option value="Bulanan">Bulanan (SPP)</option>
+                                        <option value="Semester">Semester</option>
+                                        <option value="Tahunan">Tahunan</option>
+                                        <option value="Khusus">Khusus / Bebas</option>
+                                        <option value="Sekali">Sekali</option>
+                                    </select>
+                                </div>
+                                <div class="relative w-full sm:w-56">
+                                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                                    <input type="text" id="pos-search-input" oninput="onPosSearchInputChange(this.value)" placeholder="Cari nama / kode POS..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-xs outline-none focus:ring-2 focus:ring-brand-500 text-slate-800 dark:text-slate-100">
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Dynamic POS Cards Container -->
@@ -1400,8 +1530,9 @@ function respondOutput(obj, callback) {
                     <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Metode Pembayaran</label>
                     <select id="modal-bayar-metode" onchange="toggleMetodeBayarFields()" class="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-brand-500">
                         <option value="Cash / Tunai">Cash / Tunai (Bendahara Sekolah)</option>
-                        <option value="Transfer Bank">Transfer Bank (BSI / BRI / Mandiri)</option>
-                        <option value="QRIS">QRIS Statis Sekolah</option>
+                        <option value="Transfer Bank">Transfer Bank (BSI / Mandiri / BRI / BCA)</option>
+                        <option value="QRIS">QRIS Statis / Dinamis</option>
+                        <option value="Lainnya">Lainnya / Titipan</option>
                     </select>
                 </div>
 
@@ -1413,9 +1544,10 @@ function respondOutput(obj, callback) {
                     </div>
                     <input type="number" id="modal-bayar-cash-received" oninput="calculateCashChange()" placeholder="Masukkan uang tunai santri" class="w-full p-2 bg-white dark:bg-slate-700 border border-emerald-300 dark:border-emerald-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-emerald-500">
                     <div class="flex space-x-1.5 pt-1">
+                        <button type="button" onclick="addCashShortcut(10000)" class="px-2 py-0.5 bg-white dark:bg-slate-800 hover:bg-emerald-100 text-slate-700 dark:text-slate-200 text-[10px] font-bold rounded border border-emerald-300 dark:border-emerald-700">+10rb</button>
+                        <button type="button" onclick="addCashShortcut(20000)" class="px-2 py-0.5 bg-white dark:bg-slate-800 hover:bg-emerald-100 text-slate-700 dark:text-slate-200 text-[10px] font-bold rounded border border-emerald-300 dark:border-emerald-700">+20rb</button>
                         <button type="button" onclick="addCashShortcut(50000)" class="px-2 py-0.5 bg-white dark:bg-slate-800 hover:bg-emerald-100 text-slate-700 dark:text-slate-200 text-[10px] font-bold rounded border border-emerald-300 dark:border-emerald-700">+50rb</button>
                         <button type="button" onclick="addCashShortcut(100000)" class="px-2 py-0.5 bg-white dark:bg-slate-800 hover:bg-emerald-100 text-slate-700 dark:text-slate-200 text-[10px] font-bold rounded border border-emerald-300 dark:border-emerald-700">+100rb</button>
-                        <button type="button" onclick="addCashShortcut(200000)" class="px-2 py-0.5 bg-white dark:bg-slate-800 hover:bg-emerald-100 text-slate-700 dark:text-slate-200 text-[10px] font-bold rounded border border-emerald-300 dark:border-emerald-700">+200rb</button>
                     </div>
                     <div class="pt-2 border-t border-emerald-200 dark:border-emerald-800/60 flex justify-between items-center">
                         <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Uang Kembalian:</span>
@@ -1428,6 +1560,14 @@ function respondOutput(obj, callback) {
                     <div>
                         <label class="block text-xs font-bold text-blue-800 dark:text-blue-300 mb-1">Bank Tujuan / Nomor Referensi Transfer</label>
                         <input type="text" id="modal-bayar-bank-ref" placeholder="Contoh: BSI - Ref: 987654321" class="w-full p-2 bg-white dark:bg-slate-700 border border-blue-300 dark:border-blue-700 rounded-lg text-xs outline-none">
+                    </div>
+                </div>
+
+                <!-- QRIS Details Section (Hidden by default) -->
+                <div id="modal-bayar-qris-section" class="p-3 bg-violet-50/70 dark:bg-violet-950/30 rounded-xl border border-violet-200 dark:border-violet-800/60 space-y-2 hidden">
+                    <div>
+                        <label class="block text-xs font-bold text-violet-800 dark:text-violet-300 mb-1">ID Transaksi / Nomor Referensi QRIS</label>
+                        <input type="text" id="modal-bayar-qris-ref" placeholder="Contoh: QRIS-991823001 atau RRN: 837281" class="w-full p-2 bg-white dark:bg-slate-700 border border-violet-300 dark:border-violet-700 rounded-lg text-xs outline-none">
                     </div>
                 </div>
 
@@ -1451,14 +1591,21 @@ function respondOutput(obj, callback) {
     <div id="modal-kwitansi" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white text-slate-900 rounded-2xl shadow-2xl max-w-lg w-full p-6 relative border border-slate-200 overflow-y-auto max-h-[90vh]">
             
-            <div class="no-print flex justify-between items-center pb-4 mb-4 border-b border-slate-200">
-                <span class="text-xs font-bold text-emerald-600"><i class="fa-solid fa-circle-check"></i> Transaksi Berhasil Memproses</span>
-                <div class="flex space-x-2">
-                    <button onclick="printCurrentKwitansi()" class="px-3 py-1.5 bg-brand-600 text-white text-xs font-bold rounded-lg hover:bg-brand-700 flex items-center space-x-1">
+            <div class="no-print flex flex-col sm:flex-row justify-between items-start sm:items-center pb-4 mb-4 border-b border-slate-200 gap-2">
+                <div>
+                    <span class="text-xs font-bold text-emerald-600 flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-base"></i> Transaksi Berhasil Diproses</span>
+                    <p class="text-[11px] text-slate-500">Nomor Bukti Transaksi: <b class="font-mono text-slate-800" id="kwt-modal-no-badge">TRX-...</b></p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" onclick="shareKwitansiWhatsApp(activeKwitansiData?.trx?.kwitansiNo)" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 flex items-center space-x-1.5 shadow-sm transition">
+                        <i class="fa-brands fa-whatsapp text-sm"></i>
+                        <span>Kirim WA</span>
+                    </button>
+                    <button type="button" onclick="printCurrentKwitansi()" class="px-3 py-1.5 bg-brand-600 text-white text-xs font-bold rounded-xl hover:bg-brand-700 flex items-center space-x-1.5 shadow-sm transition">
                         <i class="fa-solid fa-print"></i>
                         <span>Cetak Kwitansi</span>
                     </button>
-                    <button onclick="closeModalKwitansi()" class="px-3 py-1.5 bg-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-300">Tutup</button>
+                    <button type="button" onclick="closeModalKwitansi()" class="px-3 py-1.5 bg-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-300 transition">Tutup</button>
                 </div>
             </div>
 
@@ -3079,6 +3226,224 @@ function respondOutput(obj, callback) {
             }
         }
 
+        // Filter State for Section "MAU BAYAR YANG MANA?"
+        let currentPosStatusFilter = 'all'; // 'all', 'unpaid', 'partial', 'paid'
+        let currentPosCategoryFilter = 'all'; // 'all', 'Bulanan', 'Semester', 'Tahunan', 'Khusus', 'Sekali'
+        let currentPosSearchQuery = '';
+
+        function setPosStatusFilter(filter) {
+            currentPosStatusFilter = filter;
+            document.querySelectorAll('.pos-status-pill').forEach(btn => {
+                btn.classList.remove('bg-brand-600', 'text-white', 'shadow-sm');
+                btn.classList.add('bg-slate-100', 'dark:bg-slate-700', 'text-slate-600', 'dark:text-slate-300');
+            });
+            const activeBtn = document.getElementById(`filter-pill-${filter}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-slate-100', 'dark:bg-slate-700', 'text-slate-600', 'dark:text-slate-300');
+                activeBtn.classList.add('bg-brand-600', 'text-white', 'shadow-sm');
+            }
+            renderMauBayarYangMana();
+        }
+
+        function onPosCategoryFilterChange(val) {
+            currentPosCategoryFilter = val;
+            renderMauBayarYangMana();
+        }
+
+        function onPosSearchInputChange(val) {
+            currentPosSearchQuery = (val || '').toLowerCase().trim();
+            renderMauBayarYangMana();
+        }
+
+        function resetPosFilters() {
+            currentPosStatusFilter = 'all';
+            currentPosCategoryFilter = 'all';
+            currentPosSearchQuery = '';
+            const catEl = document.getElementById('pos-category-filter');
+            if (catEl) catEl.value = 'all';
+            const searchEl = document.getElementById('pos-search-input');
+            if (searchEl) searchEl.value = '';
+            setPosStatusFilter('all');
+        }
+
+        function scrollToStudentTrxHistory() {
+            const el = document.getElementById('trx-student-history-table');
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function getPosIconAndTheme(pos) {
+            const nameLower = ((pos && pos.nama) || '').toLowerCase();
+            const kat = (pos && pos.kategori) || '';
+
+            if (kat === 'Bulanan' || nameLower.includes('spp')) {
+                return {
+                    icon: 'fa-coins',
+                    bgColor: 'bg-indigo-50 dark:bg-indigo-950/50',
+                    textColor: 'text-indigo-600 dark:text-indigo-400',
+                    borderColor: 'border-indigo-200 dark:border-indigo-800'
+                };
+            }
+            if (nameLower.includes('lks') || nameLower.includes('modul')) {
+                return {
+                    icon: 'fa-book-open',
+                    bgColor: 'bg-sky-50 dark:bg-sky-950/50',
+                    textColor: 'text-sky-600 dark:text-sky-400',
+                    borderColor: 'border-sky-200 dark:border-sky-800'
+                };
+            }
+            if (nameLower.includes('buku') || nameLower.includes('kitab')) {
+                return {
+                    icon: 'fa-book',
+                    bgColor: 'bg-blue-50 dark:bg-blue-950/50',
+                    textColor: 'text-blue-600 dark:text-blue-400',
+                    borderColor: 'border-blue-200 dark:border-blue-800'
+                };
+            }
+            if (nameLower.includes('seragam') || nameLower.includes('baju')) {
+                return {
+                    icon: 'fa-shirt',
+                    bgColor: 'bg-teal-50 dark:bg-teal-950/50',
+                    textColor: 'text-teal-600 dark:text-teal-400',
+                    borderColor: 'border-teal-200 dark:border-teal-800'
+                };
+            }
+            if (nameLower.includes('gedung') || nameLower.includes('bangun') || nameLower.includes('sarpras')) {
+                return {
+                    icon: 'fa-building-columns',
+                    bgColor: 'bg-amber-50 dark:bg-amber-950/50',
+                    textColor: 'text-amber-600 dark:text-amber-400',
+                    borderColor: 'border-amber-200 dark:border-amber-800'
+                };
+            }
+            if (nameLower.includes('ujian') || nameLower.includes('pts') || nameLower.includes('pas') || nameLower.includes('asesmen')) {
+                return {
+                    icon: 'fa-graduation-cap',
+                    bgColor: 'bg-purple-50 dark:bg-purple-950/50',
+                    textColor: 'text-purple-600 dark:text-purple-400',
+                    borderColor: 'border-purple-200 dark:border-purple-800'
+                };
+            }
+            if (nameLower.includes('wisuda') || nameLower.includes('kelulusan') || nameLower.includes('haflah')) {
+                return {
+                    icon: 'fa-award',
+                    bgColor: 'bg-emerald-50 dark:bg-emerald-950/50',
+                    textColor: 'text-emerald-600 dark:text-emerald-400',
+                    borderColor: 'border-emerald-200 dark:border-emerald-800'
+                };
+            }
+            if (nameLower.includes('tour') || nameLower.includes('karyawisata') || nameLower.includes('kemah') || nameLower.includes('outing')) {
+                return {
+                    icon: 'fa-bus',
+                    bgColor: 'bg-rose-50 dark:bg-rose-950/50',
+                    textColor: 'text-rose-600 dark:text-rose-400',
+                    borderColor: 'border-rose-200 dark:border-rose-800'
+                };
+            }
+            if (nameLower.includes('daftar ulang') || nameLower.includes('registrasi')) {
+                return {
+                    icon: 'fa-user-check',
+                    bgColor: 'bg-cyan-50 dark:bg-cyan-950/50',
+                    textColor: 'text-cyan-600 dark:text-cyan-400',
+                    borderColor: 'border-cyan-200 dark:border-cyan-800'
+                };
+            }
+            if (nameLower.includes('kegiatan') || nameLower.includes('ekskul') || nameLower.includes('pramuka')) {
+                return {
+                    icon: 'fa-shapes',
+                    bgColor: 'bg-violet-50 dark:bg-violet-950/50',
+                    textColor: 'text-violet-600 dark:text-violet-400',
+                    borderColor: 'border-violet-200 dark:border-violet-800'
+                };
+            }
+            return {
+                icon: 'fa-hand-holding-dollar',
+                bgColor: 'bg-slate-50 dark:bg-slate-700/60',
+                textColor: 'text-slate-600 dark:text-slate-300',
+                borderColor: 'border-slate-200 dark:border-slate-700'
+            };
+        }
+
+        function refreshStudentFinancialKPIs(nis, ta) {
+            if (!nis) nis = selectedTrxStudentNis;
+            if (!ta) ta = selectedTrxAcademicYear || getActiveTAString();
+            const st = state.students.find(s => s.nis === nis);
+            if (!st) return;
+
+            normalizeMasterJenisPembayaran();
+
+            // Single Source of Truth: Ambil seluruh POS AKTIF yang sesuai Tahun Ajaran & Target Kelas Siswa
+            const applicablePOS = (state.jenisPembayaran || []).filter(p => 
+                (p.status || 'aktif').toLowerCase() === 'aktif' && 
+                (!p.tahun_ajaran || p.tahun_ajaran === ta) && 
+                (!p.targetKelas || p.targetKelas === 'Semua Kelas' || p.targetKelas === st.kelas)
+            );
+
+            let totalTagihan = 0;
+            let totalDibayar = 0;
+            let countLunas = 0;
+            let countSebagian = 0;
+            let countBelumBayar = 0;
+
+            applicablePOS.forEach(pos => {
+                let posNominal = 0;
+                let posDibayar = 0;
+
+                if (pos.kategori === 'Bulanan') {
+                    const monthBills = (state.bills || []).filter(b => b.nis === st.nis && b.posId === pos.id && (!b.tahun_ajaran || b.tahun_ajaran === ta));
+                    posNominal = pos.nominal * 12;
+                    posDibayar = monthBills.reduce((acc, b) => acc + (b.dibayar || 0), 0);
+                } else {
+                    const bill = (state.bills || []).find(b => b.nis === st.nis && b.posId === pos.id && (!b.tahun_ajaran || b.tahun_ajaran === ta));
+                    posNominal = pos.nominal;
+                    posDibayar = bill ? (bill.dibayar || 0) : 0;
+                }
+
+                const remaining = Math.max(0, posNominal - posDibayar);
+                totalTagihan += posNominal;
+                totalDibayar += posDibayar;
+
+                if (remaining <= 0 && posNominal > 0) {
+                    countLunas++;
+                } else if (posDibayar > 0) {
+                    countSebagian++;
+                } else {
+                    countBelumBayar++;
+                }
+            });
+
+            const totalSisa = Math.max(0, totalTagihan - totalDibayar);
+
+            // Update DOM KPI Boxes
+            const elTotalTagihan = document.getElementById('kpi-total-tagihan');
+            const elTotalDibayar = document.getElementById('kpi-total-dibayar');
+            const elTotalSisa = document.getElementById('kpi-total-sisa');
+            const elCountLunas = document.getElementById('kpi-count-lunas');
+            const elCountSebagian = document.getElementById('kpi-count-sebagian');
+            const elCountBelumBayar = document.getElementById('kpi-count-belumbayar');
+            const elHeaderTunggakan = document.getElementById('trx-student-tunggakan');
+
+            if (elTotalTagihan) elTotalTagihan.innerText = `Rp ${totalTagihan.toLocaleString('id-ID')}`;
+            if (elTotalDibayar) elTotalDibayar.innerText = `Rp ${totalDibayar.toLocaleString('id-ID')}`;
+            if (elTotalSisa) elTotalSisa.innerText = `Rp ${totalSisa.toLocaleString('id-ID')}`;
+            if (elCountLunas) elCountLunas.innerText = `${countLunas} POS`;
+            if (elCountSebagian) elCountSebagian.innerText = `${countSebagian} POS`;
+            if (elCountBelumBayar) elCountBelumBayar.innerText = `${countBelumBayar} POS`;
+            if (elHeaderTunggakan) elHeaderTunggakan.innerText = `Rp ${totalSisa.toLocaleString('id-ID')}`;
+
+            // Update Status Filter Counts
+            const elCntAll = document.getElementById('filter-count-all');
+            const elCntUnpaid = document.getElementById('filter-count-unpaid');
+            const elCntPartial = document.getElementById('filter-count-partial');
+            const elCntPaid = document.getElementById('filter-count-paid');
+
+            if (elCntAll) elCntAll.innerText = applicablePOS.length;
+            if (elCntUnpaid) elCntUnpaid.innerText = countBelumBayar;
+            if (elCntPartial) elCntPartial.innerText = countSebagian;
+            if (elCntPaid) elCntPaid.innerText = countLunas;
+        }
+
         function selectStudentForPayment(nis) {
             selectedTrxStudentNis = nis;
             selectedTrxBillIds = [];
@@ -3104,8 +3469,26 @@ function respondOutput(obj, callback) {
             document.getElementById('trx-student-parents').innerText = `Wali: ${st.ayah} (${st.hp})`;
             document.getElementById('trx-student-avatar').innerText = st.nama.split(' ').map(n=>n[0]).join('');
 
-            // Hitung total tunggakan siswa untuk tahun ajaran terpilih
-            refreshStudentTunggakanHeader(nis, selectedTrxAcademicYear);
+            // Reset POS filters on new student select
+            currentPosStatusFilter = 'all';
+            currentPosCategoryFilter = 'all';
+            currentPosSearchQuery = '';
+            const catEl = document.getElementById('pos-category-filter');
+            if (catEl) catEl.value = 'all';
+            const searchEl = document.getElementById('pos-search-input');
+            if (searchEl) searchEl.value = '';
+            document.querySelectorAll('.pos-status-pill').forEach(btn => {
+                btn.classList.remove('bg-brand-600', 'text-white', 'shadow-sm');
+                btn.classList.add('bg-slate-100', 'dark:bg-slate-700', 'text-slate-600', 'dark:text-slate-300');
+            });
+            const pillAll = document.getElementById('filter-pill-all');
+            if (pillAll) {
+                pillAll.classList.remove('bg-slate-100', 'dark:bg-slate-700', 'text-slate-600', 'dark:text-slate-300');
+                pillAll.classList.add('bg-brand-600', 'text-white', 'shadow-sm');
+            }
+
+            // Hitung 6 KPI ringkasan keuangan siswa secara real-time
+            refreshStudentFinancialKPIs(nis, selectedTrxAcademicYear);
 
             // RENDER SECTION UTAMA: "MAU BAYAR YANG MANA?" (Section 6 & 7)
             renderMauBayarYangMana(nis, selectedTrxAcademicYear);
@@ -3121,30 +3504,18 @@ function respondOutput(obj, callback) {
         }
 
         function refreshStudentTunggakanHeader(nis, ta) {
-            if (!ta) ta = selectedTrxAcademicYear || getActiveTAString();
-            const activePosIds = new Set((state.jenisPembayaran || [])
-                .filter(p => (p.status || 'aktif').toLowerCase() === 'aktif' && (!p.tahun_ajaran || p.tahun_ajaran === ta))
-                .map(p => p.id));
-            const stBills = (state.bills || []).filter(b => b.nis === nis && (!b.tahun_ajaran || b.tahun_ajaran === ta));
-            let tunggakan = 0;
-            stBills.filter(b => activePosIds.has(b.posId)).forEach(b => { 
-                tunggakan += Math.max(0, (b.nominal - b.dibayar)); 
-            });
-            const tunggakanEl = document.getElementById('trx-student-tunggakan');
-            if (tunggakanEl) {
-                tunggakanEl.innerText = `Rp ${tunggakan.toLocaleString('id-ID')}`;
-            }
+            refreshStudentFinancialKPIs(nis, ta);
         }
 
         /* ====================================================================
-         * SECTION 6 & 7: IMPLEMENTASI "MAU BAYAR YANG MANA?"
+         * SECTION 6 & 7: IMPLEMENTASI "MAU BAYAR YANG MANA?" (PUSAT PEMBAYARAN SISWA)
          * ==================================================================== */
         function renderMauBayarYangMana(nis, ta) {
             if (!nis) nis = selectedTrxStudentNis;
             if (!ta) ta = selectedTrxAcademicYear || getActiveTAString();
             selectedTrxAcademicYear = ta;
 
-            const st = (state.students || []).find(s => s.nis === nis);
+            const st = state.students.find(s => s.nis === nis);
             if (!st) return;
 
             // 1. Update Academic Year Badge & Dropdown Switcher (Section 14)
@@ -3170,35 +3541,84 @@ function respondOutput(obj, callback) {
                 mauBayarTaInfo.innerText = `TA: ${ta}`;
             }
 
+            // Refresh KPIs & filter pill counts
+            refreshStudentFinancialKPIs(nis, ta);
+
             const cardsContainer = document.getElementById('mau-bayar-cards-container');
             if (!cardsContainer) return;
 
             normalizeMasterJenisPembayaran();
 
             // SINGLE SOURCE OF TRUTH: Ambil seluruh POS AKTIF yang sesuai Tahun Ajaran & Target Kelas Siswa (Section 13)
-            const applicablePOS = (state.jenisPembayaran || []).filter(p => 
+            const allApplicablePOS = (state.jenisPembayaran || []).filter(p => 
                 (p.status || 'aktif').toLowerCase() === 'aktif' && 
                 (!p.tahun_ajaran || p.tahun_ajaran === ta) && 
                 (!p.targetKelas || p.targetKelas === 'Semua Kelas' || p.targetKelas === st.kelas)
             );
 
-            if (applicablePOS.length === 0) {
+            // Filter berdasarkan Toolbar (Status, Kategori, Search Query)
+            const filteredPOS = allApplicablePOS.filter(pos => {
+                let totalNominal = 0;
+                let totalDibayar = 0;
+
+                if (pos.kategori === 'Bulanan') {
+                    const monthBills = (state.bills || []).filter(b => b.nis === st.nis && b.posId === pos.id && (!b.tahun_ajaran || b.tahun_ajaran === ta));
+                    totalNominal = pos.nominal * 12;
+                    totalDibayar = monthBills.reduce((acc, b) => acc + (b.dibayar || 0), 0);
+                } else {
+                    const bill = (state.bills || []).find(b => b.nis === st.nis && b.posId === pos.id && (!b.tahun_ajaran || b.tahun_ajaran === ta));
+                    totalNominal = pos.nominal;
+                    totalDibayar = bill ? (bill.dibayar || 0) : 0;
+                }
+
+                const remaining = Math.max(0, totalNominal - totalDibayar);
+                const isLunas = remaining <= 0 && totalNominal > 0;
+                const isSebagian = totalDibayar > 0 && !isLunas;
+                const isBelumBayar = totalDibayar === 0;
+
+                // Status Filter
+                if (currentPosStatusFilter === 'unpaid' && !isBelumBayar) return false;
+                if (currentPosStatusFilter === 'partial' && !isSebagian) return false;
+                if (currentPosStatusFilter === 'paid' && !isLunas) return false;
+
+                // Kategori Filter
+                if (currentPosCategoryFilter !== 'all') {
+                    if (currentPosCategoryFilter === 'Khusus') {
+                        if (pos.kategori !== 'Khusus' && pos.kategori !== 'Bebas') return false;
+                    } else if (pos.kategori !== currentPosCategoryFilter) {
+                        return false;
+                    }
+                }
+
+                // Live Search Input Filter
+                if (currentPosSearchQuery) {
+                    const searchPool = `${pos.nama} ${pos.kode || ''} ${pos.deskripsi || ''} ${pos.kategori}`.toLowerCase();
+                    if (!searchPool.includes(currentPosSearchQuery)) return false;
+                }
+
+                return true;
+            });
+
+            if (filteredPOS.length === 0) {
                 cardsContainer.innerHTML = `
                     <div class="col-span-full py-10 px-4 text-center bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
                         <div class="w-12 h-12 mx-auto mb-2.5 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400">
-                            <i class="fa-solid fa-folder-open text-xl"></i>
+                            <i class="fa-solid fa-filter text-xl"></i>
                         </div>
-                        <h4 class="font-bold text-slate-700 dark:text-slate-200 text-sm">Tidak Ada Pos Pembayaran Aktif</h4>
+                        <h4 class="font-bold text-slate-700 dark:text-slate-200 text-sm">Tidak Ada Pos Pembayaran Sesuai Filter</h4>
                         <p class="text-xs text-slate-500 max-w-md mx-auto mt-1">
-                            Tidak ditemukan pos pembayaran aktif untuk santri kelas <b>${st.kelas}</b> pada Tahun Ajaran <b>${ta}</b>.
+                            Tidak ditemukan pos pembayaran untuk santri kelas <b>${st.kelas}</b> pada filter ini.
                         </p>
+                        <button type="button" onclick="resetPosFilters()" class="mt-3 px-3.5 py-1.5 bg-brand-50 hover:bg-brand-100 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 font-bold text-xs rounded-xl border border-brand-200 dark:border-brand-800 transition">
+                            Reset Filter POS
+                        </button>
                     </div>
                 `;
                 return;
             }
 
-            // Render setiap POS sebagai Card/Button Interaktif (Section 7 & 11)
-            cardsContainer.innerHTML = applicablePOS.map(pos => {
+            // Render setiap POS sebagai Card Interaktif Profesional
+            cardsContainer.innerHTML = filteredPOS.map(pos => {
                 let totalNominal = 0;
                 let totalDibayar = 0;
                 let remaining = 0;
@@ -3208,6 +3628,7 @@ function respondOutput(obj, callback) {
                 let percentPaid = 0;
                 let statusBadgeHtml = '';
                 let buttonHtml = '';
+                const theme = getPosIconAndTheme(pos);
 
                 if (pos.kategori === 'Bulanan') {
                     // Pos Bulanan (SPP 12 Bulan)
@@ -3247,7 +3668,7 @@ function respondOutput(obj, callback) {
                                     <span class="text-xs font-bold text-rose-600 dark:text-rose-400">Sisa: Rp ${remaining.toLocaleString('id-ID')}</span>
                                 </div>
                                 <div class="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                                    <div class="bg-amber-500 h-full rounded-full" style="width: ${percentPaid}%"></div>
+                                    <div class="bg-amber-500 h-full rounded-full transition-all" style="width: ${percentPaid}%"></div>
                                 </div>
                                 <div class="flex justify-between text-[10px] text-slate-400">
                                     <span>Dibayar: Rp ${totalDibayar.toLocaleString('id-ID')}</span>
@@ -3258,7 +3679,7 @@ function respondOutput(obj, callback) {
                         buttonHtml = `
                             <button type="button" onclick="handleSelectMauBayar('${pos.id}', '${st.nis}')" class="w-full py-2 px-3 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
                                 <i class="fa-solid fa-cash-register"></i>
-                                <span>Bayar SPP Berikutnya</span>
+                                <span>Bayar / Lanjut SPP</span>
                             </button>
                         `;
                     } else {
@@ -3267,19 +3688,19 @@ function respondOutput(obj, callback) {
                                 <span class="px-2.5 py-0.5 bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 font-black text-[11px] rounded-full inline-flex items-center gap-1">
                                     <i class="fa-solid fa-circle-xmark text-rose-500"></i> BELUM BAYAR
                                 </span>
-                                <span class="text-xs font-black text-rose-600 dark:text-rose-400">Sisa: Rp ${totalNominal.toLocaleString('id-ID')}</span>
+                                <span class="text-xs font-bold text-rose-600 dark:text-rose-400">Rp ${totalNominal.toLocaleString('id-ID')}</span>
                             </div>
                         `;
                         buttonHtml = `
                             <button type="button" onclick="handleSelectMauBayar('${pos.id}', '${st.nis}')" class="w-full py-2 px-3 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
                                 <i class="fa-solid fa-cash-register"></i>
-                                <span>Pilih Bulan & Bayar</span>
+                                <span>Pilih Bulan SPP</span>
                             </button>
                         `;
                     }
                 } else {
-                    // Pos Non-Bulanan (Bebas, Tahunan, Sekali, LKS Semester, Seragam, dll.)
-                    let bill = (state.bills || []).find(b => b.nis === st.nis && b.posId === pos.id && (!b.tahun_ajaran || b.tahun_ajaran === ta));
+                    // Pos Non-Bulanan (Tahunan, Semester, Bebas/Cicilan, Sekali)
+                    const bill = (state.bills || []).find(b => b.nis === st.nis && b.posId === pos.id && (!b.tahun_ajaran || b.tahun_ajaran === ta));
                     totalNominal = pos.nominal;
                     totalDibayar = bill ? (bill.dibayar || 0) : 0;
                     remaining = Math.max(0, totalNominal - totalDibayar);
@@ -3299,7 +3720,7 @@ function respondOutput(obj, callback) {
                             </div>
                         `;
                         buttonHtml = `
-                            <button type="button" onclick="handleSelectMauBayar('${pos.id}', '${st.nis}')" class="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-bold text-xs rounded-xl border border-emerald-200 dark:border-emerald-800 transition flex items-center justify-center gap-1.5">
+                            <button type="button" onclick="handleViewKwitansiPos('${pos.id}', '${st.nis}')" class="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-bold text-xs rounded-xl border border-emerald-200 dark:border-emerald-800 transition flex items-center justify-center gap-1.5">
                                 <i class="fa-solid fa-file-invoice"></i>
                                 <span>Lihat Rincian Kwitansi</span>
                             </button>
@@ -3309,12 +3730,12 @@ function respondOutput(obj, callback) {
                             <div class="space-y-1 mb-2">
                                 <div class="flex items-center justify-between">
                                     <span class="px-2.5 py-0.5 bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-black text-[11px] rounded-full inline-flex items-center gap-1">
-                                        <i class="fa-solid fa-clock-rotate-left text-amber-500"></i> SEBAGIAN
+                                        <i class="fa-solid fa-clock-rotate-left text-amber-500"></i> SEBAGIAN (${percentPaid}%)
                                     </span>
                                     <span class="text-xs font-black text-rose-600 dark:text-rose-400">Sisa: Rp ${remaining.toLocaleString('id-ID')}</span>
                                 </div>
                                 <div class="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                                    <div class="bg-amber-500 h-full rounded-full" style="width: ${percentPaid}%"></div>
+                                    <div class="bg-amber-500 h-full rounded-full transition-all" style="width: ${percentPaid}%"></div>
                                 </div>
                                 <div class="flex justify-between text-[10px] text-slate-400">
                                     <span>Dibayar: Rp ${totalDibayar.toLocaleString('id-ID')}</span>
@@ -3323,7 +3744,7 @@ function respondOutput(obj, callback) {
                             </div>
                         `;
                         buttonHtml = `
-                            <button type="button" onclick="handleSelectMauBayar('${pos.id}', '${st.nis}')" class="w-full py-2 px-3 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
+                            <button type="button" onclick="openModalBayarSinglePos('${pos.id}', '${st.nis}')" class="w-full py-2 px-3 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
                                 <i class="fa-solid fa-hand-holding-dollar"></i>
                                 <span>Cicil Lanjut</span>
                             </button>
@@ -3338,7 +3759,7 @@ function respondOutput(obj, callback) {
                             </div>
                         `;
                         buttonHtml = `
-                            <button type="button" onclick="handleSelectMauBayar('${pos.id}', '${st.nis}')" class="w-full py-2 px-3 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
+                            <button type="button" onclick="openModalBayarSinglePos('${pos.id}', '${st.nis}')" class="w-full py-2 px-3 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
                                 <i class="fa-solid fa-cash-register"></i>
                                 <span>Bayar Sekarang</span>
                             </button>
@@ -3346,28 +3767,37 @@ function respondOutput(obj, callback) {
                     }
                 }
 
-                const cardBorder = isLunas ? 'border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/20 dark:bg-emerald-950/10' : (isSebagian ? 'border-amber-300 dark:border-amber-800 bg-amber-50/20 dark:bg-amber-950/10' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800');
+                const cardBorder = isLunas 
+                    ? 'border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/20 dark:bg-emerald-950/10' 
+                    : (isSebagian ? 'border-amber-300 dark:border-amber-800 bg-amber-50/20 dark:bg-amber-950/10' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800');
 
                 return `
                     <div class="rounded-2xl border ${cardBorder} p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative group select-none">
                         <div>
-                            <div class="flex items-start justify-between gap-1.5 mb-2">
-                                <div class="flex flex-wrap items-center gap-1">
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
-                                        pos.kategori === 'Bulanan' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' :
-                                        pos.kategori === 'Tahunan' ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' :
-                                        pos.kategori === 'Sekali' ? 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300' :
-                                        'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
-                                    }">
-                                        ${pos.kategori}
-                                    </span>
-                                    ${pos.semester ? `
-                                        <span class="px-1.5 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 rounded text-[10px] font-bold">
-                                            Sem ${pos.semester}
-                                        </span>
-                                    ` : ''}
+                            <div class="flex items-start justify-between gap-1.5 mb-2.5">
+                                <div class="flex items-center space-x-2.5">
+                                    <div class="w-9 h-9 rounded-xl ${theme.bgColor} ${theme.textColor} flex items-center justify-center border ${theme.borderColor}">
+                                        <i class="fa-solid ${theme.icon} text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <div class="flex flex-wrap items-center gap-1">
+                                            <span class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${
+                                                pos.kategori === 'Bulanan' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' :
+                                                pos.kategori === 'Tahunan' ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' :
+                                                pos.kategori === 'Sekali' ? 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300' :
+                                                'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
+                                            }">
+                                                ${pos.kategori}
+                                            </span>
+                                            ${pos.semester ? `
+                                                <span class="px-1.5 py-0.2 bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 rounded text-[9px] font-bold">
+                                                    Sem ${pos.semester}
+                                                </span>
+                                            ` : ''}
+                                        </div>
+                                        <span class="text-[9px] font-mono text-slate-400 font-bold block mt-0.5">${pos.kode || pos.id}</span>
+                                    </div>
                                 </div>
-                                <span class="text-[10px] font-mono text-slate-400 font-bold">${pos.kode || pos.id}</span>
                             </div>
 
                             <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm mb-1 leading-snug line-clamp-2" title="${pos.nama}">
@@ -3395,8 +3825,6 @@ function respondOutput(obj, callback) {
             const pos = (state.jenisPembayaran || []).find(p => p.id === posId);
             if (!pos) return;
 
-            const ta = selectedTrxAcademicYear || getActiveTAString();
-
             if (pos.kategori === 'Bulanan') {
                 // Smooth scroll ke section matriks SPP bulanan
                 const sppSection = document.getElementById('spp-months-grid');
@@ -3410,9 +3838,16 @@ function respondOutput(obj, callback) {
                 return;
             }
 
-            // Untuk Pos Non-Bulanan: Ambil atau bentuk tagihan siswa
+            openModalBayarSinglePos(posId, nis);
+        }
+
+        function openModalBayarSinglePos(posId, nis) {
+            if (!nis) nis = selectedTrxStudentNis;
+            const pos = (state.jenisPembayaran || []).find(p => p.id === posId);
+            if (!pos) return;
             const st = state.students.find(s => s.nis === nis);
             if (!st) return;
+            const ta = selectedTrxAcademicYear || getActiveTAString();
 
             let bill = (state.bills || []).find(b => b.nis === nis && b.posId === pos.id && (!b.tahun_ajaran || b.tahun_ajaran === ta));
             if (!bill) {
@@ -3422,7 +3857,7 @@ function respondOutput(obj, callback) {
                     student_id: nis,
                     posId: pos.id,
                     payment_type_id: pos.id,
-                    academic_year_id: pos.academic_year_id,
+                    academic_year_id: pos.academic_year_id || ('TA-' + (pos.tahun_ajaran || ta).replace(/[^a-zA-Z0-9]/g, '')),
                     namaPos: pos.nama,
                     kategori: pos.kategori,
                     nominal: pos.nominal,
@@ -3437,24 +3872,40 @@ function respondOutput(obj, callback) {
                 saveState();
             }
 
-            // Jika sudah lunas, tampilkan kwitansi transaksi terakhir
             if (bill.dibayar >= bill.nominal && bill.nominal > 0) {
-                const paidTrx = (state.transactions || []).find(t => t.nis === nis && (t.posId === pos.id || t.posNama === pos.nama));
-                if (paidTrx) {
-                    showKwitansiModal(paidTrx, st);
-                } else {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Tagihan Lunas',
-                        text: `Tagihan "${pos.nama}" untuk santri ini sudah berstatus LUNAS penuh.`,
-                        confirmButtonColor: '#0284c7'
-                    });
+                handleViewKwitansiPos(pos.id, nis);
+                return;
+            }
+
+            openModalBayarMulti([bill.id], nis);
+        }
+
+        function handleViewKwitansiPos(posId, nis) {
+            if (!nis) nis = selectedTrxStudentNis;
+            const pos = (state.jenisPembayaran || []).find(p => p.id === posId);
+            if (!pos) return;
+            const st = state.students.find(s => s.nis === nis);
+            if (!st) return;
+
+            if (pos.kategori === 'Bulanan') {
+                const sppSection = document.getElementById('spp-months-grid');
+                if (sppSection) {
+                    sppSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
                 return;
             }
 
-            // Buka Modal Bayar untuk POS yang dipilih (Dapat dicicil atau dibayar lunas)
-            openModalBayarMulti([bill.id], nis);
+            const paidTrx = (state.transactions || []).find(t => t.nis === nis && (t.posId === pos.id || t.posNama === pos.nama));
+            if (paidTrx) {
+                showKwitansiModal(paidTrx, st);
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Tagihan Lunas',
+                    text: `Tagihan "${pos.nama}" untuk santri ini sudah berstatus LUNAS penuh.`,
+                    confirmButtonColor: '#0284c7'
+                });
+            }
         }
 
         function renderStudentMatrixAndBills(nis) {
@@ -3693,6 +4144,9 @@ function respondOutput(obj, callback) {
                     <td class="p-3 text-right space-x-1">
                         <button onclick="reprintKwitansi('${t.kwitansiNo}')" class="px-2 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded text-[11px] font-semibold" title="Cetak Kwitansi">
                             <i class="fa-solid fa-print"></i> Kwitansi
+                        </button>
+                        <button onclick="shareKwitansiWhatsApp('${t.kwitansiNo}')" class="px-2 py-1 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 rounded text-[11px] font-semibold" title="Kirim Bukti Pembayaran via WhatsApp">
+                            <i class="fa-brands fa-whatsapp text-emerald-600"></i> WA
                         </button>
                         ${(!isVoid && isStaff) ? `
                         <button onclick="confirmVoidTransaction('${t.kwitansiNo}')" class="px-2 py-1 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded text-[11px] font-semibold" title="Batalkan Kwitansi (VOID)">
@@ -4089,20 +4543,24 @@ function respondOutput(obj, callback) {
 
         /* CASH CALCULATOR & HELPER METODE BAYAR */
         function toggleMetodeBayarFields() {
-            const metode = document.getElementById('modal-bayar-metode').value;
+            const metode = document.getElementById('modal-bayar-metode') ? document.getElementById('modal-bayar-metode').value : 'Cash / Tunai';
             const cashSection = document.getElementById('modal-bayar-cash-section');
             const transferSection = document.getElementById('modal-bayar-transfer-section');
+            const qrisSection = document.getElementById('modal-bayar-qris-section');
+
+            if (cashSection) cashSection.classList.add('hidden');
+            if (transferSection) transferSection.classList.add('hidden');
+            if (qrisSection) qrisSection.classList.add('hidden');
 
             if (metode === 'Cash / Tunai') {
-                cashSection.classList.remove('hidden');
-                transferSection.classList.add('hidden');
-                calculateCashChange();
+                if (cashSection) {
+                    cashSection.classList.remove('hidden');
+                    calculateCashChange();
+                }
             } else if (metode === 'Transfer Bank') {
-                cashSection.classList.add('hidden');
-                transferSection.classList.remove('hidden');
-            } else {
-                cashSection.classList.add('hidden');
-                transferSection.classList.add('hidden');
+                if (transferSection) transferSection.classList.remove('hidden');
+            } else if (metode === 'QRIS') {
+                if (qrisSection) qrisSection.classList.remove('hidden');
             }
         }
 
@@ -4229,13 +4687,20 @@ function respondOutput(obj, callback) {
             } else if (metode === 'Transfer Bank') {
                 const bankRefInput = document.getElementById('modal-bayar-bank-ref');
                 bankRef = bankRefInput ? bankRefInput.value.trim() : '';
+            } else if (metode === 'QRIS') {
+                const qrisRefInput = document.getElementById('modal-bayar-qris-ref');
+                bankRef = qrisRefInput ? qrisRefInput.value.trim() : '';
             }
 
-            // Generate Satu Nomor Kwitansi Resmi Bersama untuk Multi Pos
-            const todayStr = new Date().toISOString().slice(0, 10);
-            const todayPrefix = todayStr.replace(/-/g, '');
+            // Generate Nomor Transaksi Resmi Otomatis Format: TRX-YYYYMMDD-XXXXX (Section 4 & 5)
+            const todayObj = new Date();
+            const todayStr = todayObj.toISOString().slice(0, 10);
+            const yyyy = todayObj.getFullYear();
+            const mm = String(todayObj.getMonth() + 1).padStart(2, '0');
+            const dd = String(todayObj.getDate()).padStart(2, '0');
+            const todayPrefix = `${yyyy}${mm}${dd}`;
             const existingTodayCount = (state.transactions || []).filter(t => t.tanggal === todayStr).length;
-            const kwtNo = `KWT-${todayPrefix}-${String(existingTodayCount + 1).padStart(4, '0')}`;
+            const kwtNo = `TRX-${todayPrefix}-${String(existingTodayCount + 1).padStart(5, '0')}`;
             const bendaharaName = (state.schoolInfo && state.schoolInfo.bendahara) ? state.schoolInfo.bendahara : 'Ust. Yuli';
 
             // Catat transaksi per pos terpilih & perbarui saldo tagihan
@@ -4302,10 +4767,12 @@ function respondOutput(obj, callback) {
             // Simpan state dan perbarui seluruh UI secara real-time
             saveState();
             closeModalBayar();
+            refreshStudentFinancialKPIs(st.nis, selectedTrxAcademicYear);
             renderStudentMatrixAndBills(st.nis);
             if (typeof renderMauBayarYangMana === 'function') {
                 renderMauBayarYangMana(st.nis, selectedTrxAcademicYear);
             }
+            renderStudentTrxHistory(st.nis);
             renderDashboard();
 
             // Tampilkan Notifikasi Sukses + Opsi Cetak Kwitansi
@@ -5254,6 +5721,8 @@ function respondOutput(obj, callback) {
         function showKwitansiModal(trx, student) {
             activeKwitansiData = { trx, student };
             document.getElementById('kwt-no').innerText = trx.kwitansiNo;
+            const badgeEl = document.getElementById('kwt-modal-no-badge');
+            if (badgeEl) badgeEl.innerText = trx.kwitansiNo;
             document.getElementById('kwt-siswa-nama').innerText = student.nama;
             document.getElementById('kwt-siswa-detail').innerText = `NIS: ${student.nis} | Kelas: ${student.kelas}`;
             document.getElementById('kwt-tanggal').innerText = formatTanggalIndo(trx.tanggal);
@@ -7947,6 +8416,100 @@ function respondOutput(obj, callback) {
                 showConfirmButton: false
             });
         }
+    
+        /* ====================================================================
+         * KWITANSI MULTI & WHATSAPP INTEGRATION (PUSAT PEMBAYARAN SISWA)
+         * ==================================================================== */
+        function showMultiKwitansiModal(kwtNo, st, createdTransactions) {
+            const trx = (createdTransactions && createdTransactions[0]) || (state.transactions || []).find(t => t.kwitansiNo === kwtNo);
+            if (!st) st = state.students.find(s => s.nis === trx?.nis);
+            if (trx && st) {
+                showKwitansiModal(trx, st);
+            }
+        }
+
+        function generateKwitansiWhatsAppText(trx, student) {
+            if (!trx || !student) return '';
+            const kwtItems = (state.transactions || []).filter(t => t.kwitansiNo === trx.kwitansiNo);
+            const totalNominal = kwtItems.length > 0 
+                ? kwtItems.reduce((sum, item) => sum + item.nominal, 0) 
+                : trx.nominal;
+
+            let itemList = '';
+            kwtItems.forEach((it, idx) => {
+                itemList += `• ${it.posNama}: Rp ${it.nominal.toLocaleString('id-ID')}\n`;
+                if (it.keterangan) itemList += `   _${it.keterangan}_\n`;
+            });
+
+            const verifyUrl = `${window.location.origin}${window.location.pathname}?verify=${encodeURIComponent(trx.kwitansiNo)}`;
+
+            const text = `*BUKTI PEMBAYARAN RESMI (KWITANSI)*\n` +
+                `*${state.schoolInfo?.nama || 'SMP MQ AL HUDA BINANGUN'}*\n` +
+                `-----------------------------------------\n` +
+                `No. Transaksi : *${trx.kwitansiNo}*\n` +
+                `Tanggal       : ${formatTanggalIndo(trx.tanggal)}\n` +
+                `Status        : *${trx.status === 'VOID' ? 'BATAL (VOID)' : 'LUNAS BERHASIL'}*\n` +
+                `-----------------------------------------\n` +
+                `*DATA SANTRI:*\n` +
+                `• Nama  : *${student.nama}*\n` +
+                `• NIS   : ${student.nis}\n` +
+                `• Kelas : ${student.kelas}\n` +
+                `• Wali  : ${student.ayah || '-'}\n` +
+                `-----------------------------------------\n` +
+                `*RINCIAN PEMBAYARAN:*\n` +
+                `${itemList}` +
+                `*TOTAL DIBAYAR : Rp ${totalNominal.toLocaleString('id-ID')}*\n` +
+                `Metode Bayar  : ${trx.metode || 'Tunai'}\n` +
+                `Petugas Kasir : ${trx.petugas || 'Bendahara'}\n` +
+                `-----------------------------------------\n` +
+                `Kwitansi digital resmi ini dapat diverifikasi di:\n` +
+                `${verifyUrl}\n\n` +
+                `_Terima kasih atas pembayaran yang telah dilakukan._`;
+            return text;
+        }
+
+        function shareKwitansiWhatsApp(kwitansiNo) {
+            const trx = (state.transactions || []).find(t => t.kwitansiNo === kwitansiNo);
+            if (!trx) {
+                Swal.fire('Error', 'Data kwitansi transaksi tidak ditemukan!', 'error');
+                return;
+            }
+            const student = state.students.find(s => s.nis === trx.nis);
+            if (!student) {
+                Swal.fire('Error', 'Data santri tidak ditemukan!', 'error');
+                return;
+            }
+
+            const text = generateKwitansiWhatsAppText(trx, student);
+            let phone = (student.hp || '').replace(/[^0-9]/g, '');
+            if (phone.startsWith('0')) {
+                phone = '62' + phone.substring(1);
+            }
+
+            if (!phone) {
+                Swal.fire({
+                    title: 'Nomor WhatsApp Belum Ada',
+                    text: 'Nomor HP wali santri belum tercatat. Masukkan nomor WhatsApp tujuan:',
+                    input: 'text',
+                    inputPlaceholder: '08123456789',
+                    showCancelButton: true,
+                    confirmButtonText: 'Buka WhatsApp',
+                    cancelButtonText: 'Batal'
+                }).then(res => {
+                    if (res.isConfirmed && res.value) {
+                        let customPhone = res.value.replace(/[^0-9]/g, '');
+                        if (customPhone.startsWith('0')) customPhone = '62' + customPhone.substring(1);
+                        const waUrl = `https://wa.me/${customPhone}?text=${encodeURIComponent(text)}`;
+                        window.open(waUrl, '_blank');
+                    }
+                });
+                return;
+            }
+
+            const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+            window.open(waUrl, '_blank');
+        }
+
     </script>
 </body>
 </html>
