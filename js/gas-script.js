@@ -20,9 +20,9 @@ function setupDatabaseSheets() {
     'CLASSES': ['class_id', 'nama_kelas', 'tingkat', 'wali_kelas'],
     'ACADEMIC_YEARS': ['academic_year_id', 'tahun_ajaran', 'status'],
     'STUDENT_ACADEMIC_HISTORY': ['history_id', 'student_id', 'academic_year_id', 'class_id', 'catatan'],
-    'PAYMENT_TYPES': ['payment_type_id', 'nama_pos', 'kategori', 'target_kelas', 'nominal_default', 'status'],
+    'PAYMENT_TYPES': ['payment_type_id', 'nama_pos', 'kode', 'kategori', 'academic_year_id', 'semester', 'target_kelas', 'nominal_default', 'status', 'deskripsi', 'created_at', 'updated_at'],
     'BILLS': ['bill_id', 'student_id', 'academic_year_id', 'payment_type_id', 'nama_pos', 'period', 'nominal', 'dibayar', 'status', 'due_date'],
-    'PAYMENTS': ['payment_id', 'receipt_number', 'idempotency_key', 'bill_id', 'student_id', 'nama_siswa', 'pos_nama', 'nominal', 'metode', 'uang_diterima', 'kembalian', 'bank', 'no_referensi', 'petugas', 'timestamp', 'status', 'keterangan'],
+    'PAYMENTS': ['payment_id', 'receipt_number', 'idempotency_key', 'bill_id', 'student_id', 'nama_siswa', 'pos_nama', 'payment_type_id', 'academic_year_id', 'nominal', 'metode', 'uang_diterima', 'kembalian', 'bank', 'no_referensi', 'petugas', 'timestamp', 'status', 'keterangan'],
     'VOID_TRANSACTIONS': ['void_id', 'payment_id', 'receipt_number', 'nominal', 'alasan', 'petugas', 'role', 'timestamp'],
     'REFUNDS': ['refund_id', 'payment_id', 'receipt_number', 'nominal', 'alasan', 'petugas', 'role', 'timestamp'],
     'AUDIT_LOGS': ['audit_id', 'timestamp', 'user_id', 'petugas', 'role', 'action', 'entity', 'entity_id', 'detail', 'device'],
@@ -322,7 +322,9 @@ function handlePaymentExecution(payload, session) {
     // 5. Simpan ke Sheet PAYMENTS
     sheetPayments.appendRow([
       paymentId, receiptNumber, idempotencyKey, targetBill.id, studentId, payload.namaSiswa || '-',
-      targetBill.posNama, nominalNum, metode || 'CASH', Number(uangDiterima) || nominalNum,
+      targetBill.posNama, payload.payment_type_id || payload.posId || targetBill.payment_type_id || '-',
+      payload.academic_year_id || payload.academicYear || targetBill.academic_year_id || '-',
+      nominalNum, metode || 'CASH', Number(uangDiterima) || nominalNum,
       Number(kembalian) || 0, payload.bank || '-', payload.noReferensi || '-', petugasName,
       timestamp, 'SUCCESS', keterangan || ''
     ]);

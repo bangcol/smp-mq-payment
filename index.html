@@ -566,6 +566,48 @@
                     </div>
 
                     
+                    
+                    <!-- Academic Year Switcher Bar (Section 14) -->
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded-xl bg-brand-50 dark:bg-brand-950/60 flex items-center justify-center text-brand-600 dark:text-brand-400">
+                                <i class="fa-solid fa-calendar-check text-base"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Tahun Ajaran:</span>
+                                    <span class="px-2.5 py-0.5 bg-emerald-500 text-white text-[11px] font-black rounded-full shadow-sm" id="trx-active-ta-badge">2026/2027 (AKTIF)</span>
+                                </div>
+                                <p class="text-[11px] text-slate-400">Pilih tahun ajaran untuk melihat tagihan dan POS yang berlaku.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <label for="trx-ta-selector" class="text-xs font-semibold text-slate-600 dark:text-slate-300">Ganti Tahun Ajaran:</label>
+                            <select id="trx-ta-selector" onchange="changeTrxAcademicYear(this.value)" class="py-1.5 px-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-bold text-brand-600 dark:text-brand-300 outline-none focus:ring-2 focus:ring-brand-500">
+                                <!-- Options populated dynamically via renderMauBayarYangMana() -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 6 & 7: MAU BAYAR YANG MANA? (Daftar POS Interaktif Siswa) -->
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 p-6 shadow-sm space-y-4" id="section-mau-bayar">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700 pb-3">
+                            <div>
+                                <h3 class="text-lg font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                    <i class="fa-solid fa-hand-holding-dollar text-emerald-500 text-xl"></i>
+                                    MAU BAYAR YANG MANA?
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5">Pilih salah satu POS pembayaran santri di bawah ini untuk melihat rincian tagihan atau memproses pembayaran:</p>
+                            </div>
+                            <span class="text-xs font-bold text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-950/50 px-3 py-1 rounded-full border border-brand-200 dark:border-brand-800" id="mau-bayar-ta-info">TA: 2026/2027</span>
+                        </div>
+
+                        <!-- Dynamic POS Cards Container -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="mau-bayar-cards-container">
+                            <!-- Populated dynamically via renderMauBayarYangMana() -->
+                        </div>
+                    </div>
+
                     <!-- Multi-Bill Selection & Batch Checkout Toolbar -->
                     <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
                         <div class="flex flex-wrap items-center gap-2">
@@ -861,6 +903,32 @@
                             <i class="fa-solid fa-plus"></i>
                             <span>Tambah Pos Pembayaran</span>
                         </button>
+                    </div>
+                </div>
+
+                
+                <!-- Filter Bar Tahun Ajaran & Status POS (Section 4) -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700 p-3.5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <div class="flex items-center space-x-1.5">
+                            <i class="fa-solid fa-filter text-brand-600 text-xs"></i>
+                            <label for="filter-pos-ta" class="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Tahun Ajaran:</label>
+                        </div>
+                        <select id="filter-pos-ta" onchange="renderJenisPembayaran()" class="py-1.5 px-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-brand-500">
+                            <!-- Populated dynamically via renderJenisPembayaran() -->
+                        </select>
+
+                        <div class="flex items-center space-x-1.5 sm:ml-2">
+                            <label for="filter-pos-status" class="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Status:</label>
+                        </div>
+                        <select id="filter-pos-status" onchange="renderJenisPembayaran()" class="py-1.5 px-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="all">Semua Status</option>
+                            <option value="aktif" selected>Hanya Aktif</option>
+                            <option value="nonaktif">Hanya Nonaktif</option>
+                        </select>
+                    </div>
+                    <div class="text-xs text-slate-500 font-medium" id="pos-count-info">
+                        <!-- Loaded dynamically -->
                     </div>
                 </div>
 
@@ -2412,23 +2480,65 @@ function respondOutput(obj, callback) {
                 /* ====================================================================
          * MASTER JENIS PEMBAYARAN NORMALIZATION & SINGLE SOURCE OF TRUTH SYNC
          * ==================================================================== */
+        function getActiveAcademicYear() {
+            if (!state.tahunAjarans || state.tahunAjarans.length === 0) {
+                state.tahunAjarans = [
+                    { id: 'TA-20252026', ta: '2025/2026', tahun_ajaran: '2025/2026', status: 'Nonaktif' },
+                    { id: 'TA-20262027', ta: '2026/2027', tahun_ajaran: '2026/2027', status: 'Aktif' }
+                ];
+            }
+            // Standardize fields on tahunAjarans
+            state.tahunAjarans.forEach((t, idx) => {
+                if (!t.ta && t.tahun_ajaran) t.ta = t.tahun_ajaran;
+                if (!t.tahun_ajaran && t.ta) t.tahun_ajaran = t.ta;
+                if (!t.id) t.id = 'TA-' + (t.ta || 'TA').replace(/[^a-zA-Z0-9]/g, '');
+                if (!t.status) t.status = t.ta === state.activeTA ? 'Aktif' : 'Nonaktif';
+            });
+
+            const activeObj = state.tahunAjarans.find(t => (t.status || '').toLowerCase() === 'aktif');
+            if (activeObj) {
+                state.activeTA = activeObj.ta;
+                return activeObj;
+            }
+            const fallback = state.tahunAjarans[0] || { id: 'TA-20262027', ta: '2026/2027', tahun_ajaran: '2026/2027', status: 'Aktif' };
+            fallback.status = 'Aktif';
+            state.activeTA = fallback.ta;
+            return fallback;
+        }
+
         function normalizeMasterJenisPembayaran() {
             if (!state.jenisPembayaran) state.jenisPembayaran = [];
-            const currentTA = state.activeTA || '2026/2027';
+            const activeTaObj = getActiveAcademicYear();
+            const currentTA = activeTaObj.ta || state.activeTA || '2026/2027';
 
             state.jenisPembayaran.forEach((p, idx) => {
-                if (!p.id) p.id = `POS${idx + 1}`;
-                if (!p.nama) p.nama = `Pos Pembayaran ${idx + 1}`;
+                if (!p.id) p.id = 'POS' + (idx + 1);
+                if (!p.payment_type_id) p.payment_type_id = p.id;
+                if (!p.nama) p.nama = 'Pos Pembayaran ' + (idx + 1);
                 if (!p.kode) {
                     const prefix = p.nama.split(/\s+/).map(w => w[0]).join('').toUpperCase().substring(0, 4) || 'POS';
-                    p.kode = `${prefix}-${String(idx + 1).padStart(2, '0')}`;
+                    p.kode = prefix + '-' + String(idx + 1).padStart(2, '0');
                 }
-                if (!p.deskripsi) p.deskripsi = p.ket || `Tagihan ${p.nama}`;
+                if (!p.deskripsi) p.deskripsi = p.ket || ('Tagihan ' + p.nama);
                 if (!p.nominal) p.nominal = 0;
                 if (!p.kategori) p.kategori = p.nama.toLowerCase().includes('spp') ? 'Bulanan' : 'Bebas';
                 if (!p.periode) p.periode = p.kategori === 'Bulanan' ? 'Bulanan' : (p.kategori === 'Tahunan' ? 'Tahunan' : 'Sekali');
-                if (!p.tahun_ajaran) p.tahun_ajaran = currentTA;
                 if (!p.targetKelas) p.targetKelas = 'Semua Kelas';
+
+                // Relasi Tahun Ajaran & academic_year_id (Section 2 & 3)
+                if (!p.tahun_ajaran) p.tahun_ajaran = currentTA;
+                const taMatch = (state.tahunAjarans || []).find(t => t.ta === p.tahun_ajaran || t.tahun_ajaran === p.tahun_ajaran);
+                p.academic_year_id = taMatch ? taMatch.id : (p.academic_year_id || ('TA-' + (p.tahun_ajaran || '').replace(/[^a-zA-Z0-9]/g, '')));
+
+                // Semester: 1, 2, atau null/umum (Section 1)
+                if (p.semester === undefined || p.semester === null || p.semester === '') {
+                    if (/semester\s*1/i.test(p.nama)) p.semester = 1;
+                    else if (/semester\s*2/i.test(p.nama)) p.semester = 2;
+                    else p.semester = null;
+                } else {
+                    p.semester = (p.semester === 1 || p.semester === '1') ? 1 : ((p.semester === 2 || p.semester === '2') ? 2 : null);
+                }
+
                 const rawStatus = (p.status || 'aktif').toLowerCase();
                 p.status = rawStatus === 'nonaktif' ? 'nonaktif' : 'aktif';
                 if (!p.created_at) p.created_at = new Date().toISOString();
@@ -2443,18 +2553,16 @@ function respondOutput(obj, callback) {
 
             normalizeMasterJenisPembayaran();
 
-            const currentTA = state.activeTA || '2026/2027';
-            // SINGLE SOURCE OF TRUTH: Hanya ambil pos yang AKTIF dan sesuai TAHUN AJARAN aktif
+            // SINGLE SOURCE OF TRUTH: Ambil seluruh POS yang berstatus AKTIF
             const activeMasterPOS = state.jenisPembayaran.filter(p => 
-                (p.status || 'aktif').toLowerCase() === 'aktif' && 
-                (!p.tahun_ajaran || p.tahun_ajaran === currentTA)
+                (p.status || 'aktif').toLowerCase() === 'aktif'
             );
             const activePosIds = new Set(activeMasterPOS.map(p => p.id));
 
             const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
             // 1. Bersihkan tagihan siswa yang BELUM DIBAYAR (dibayar === 0) jika pos-nya NONAKTIF atau sudah DIHAPUS dari master
-            // PENTING: Riwayat transaksi dan tagihan yang sudah dibayar (dibayar > 0) TETAP AMAN DIPERTAHANKAN (Section C & D)
+            // PENTING: Riwayat transaksi dan tagihan yang sudah dibayar (dibayar > 0) TETAP AMAN DIPERTAHANKAN (Section 5 & 21)
             state.bills = state.bills.filter(b => {
                 if (b.dibayar > 0) return true;
                 return activePosIds.has(b.posId);
@@ -2473,44 +2581,52 @@ function respondOutput(obj, callback) {
 
                     if (pos.kategori === 'Bulanan') {
                         months.forEach((m, idx) => {
-                            const bid = `BILL-${pos.id}-${st.nis}-${idx}`;
+                            const bid = 'BILL-' + pos.id + '-' + st.nis + '-' + idx;
                             let bill = state.bills.find(b => b.nis === st.nis && (
                                 b.id === bid || 
-                                (b.posId === pos.id && (b.namaPos === `SPP ${m}` || b.namaPos === `${pos.nama} (${m})` || (b.kategori === 'Bulanan' && b.namaPos.toLowerCase().includes(m.toLowerCase()))))
+                                (b.posId === pos.id && (b.namaPos === 'SPP ' + m || b.namaPos === pos.nama + ' (' + m + ')' || (b.kategori === 'Bulanan' && b.namaPos.toLowerCase().includes(m.toLowerCase()))))
                             ));
 
                             if (!bill) {
                                 state.bills.push({
                                     id: bid,
                                     nis: st.nis,
+                                    student_id: st.nis,
                                     posId: pos.id,
-                                    namaPos: `SPP ${m}`,
+                                    payment_type_id: pos.id,
+                                    academic_year_id: pos.academic_year_id,
+                                    namaPos: 'SPP ' + m,
                                     kategori: 'Bulanan',
                                     nominal: pos.nominal,
                                     dibayar: 0,
                                     status: 'Belum Lunas',
-                                    tahun_ajaran: pos.tahun_ajaran || currentTA
+                                    tahun_ajaran: pos.tahun_ajaran,
+                                    semester: pos.semester || null,
+                                    targetKelas: pos.targetKelas
                                 });
                             } else {
                                 bill.posId = pos.id;
+                                bill.payment_type_id = pos.id;
+                                bill.academic_year_id = pos.academic_year_id;
                                 bill.kategori = 'Bulanan';
-                                bill.namaPos = `SPP ${m}`;
-                                bill.tahun_ajaran = pos.tahun_ajaran || currentTA;
-                                // Aturan Snapshot Nominal (Section J):
+                                bill.namaPos = 'SPP ' + m;
+                                bill.tahun_ajaran = pos.tahun_ajaran;
+                                bill.semester = pos.semester || null;
+                                bill.targetKelas = pos.targetKelas;
+                                // Aturan Snapshot Nominal:
                                 if (bill.dibayar === 0) {
                                     bill.nominal = pos.nominal;
                                     bill.status = 'Belum Lunas';
-                                } else if (bill.status === 'Lunas') {
-                                    bill.nominal = bill.dibayar;
+                                } else if (bill.dibayar >= bill.nominal) {
+                                    bill.status = 'Lunas';
                                 } else {
-                                    bill.nominal = Math.max(bill.dibayar, pos.nominal);
-                                    bill.status = bill.dibayar >= bill.nominal ? 'Lunas' : 'Cicilan';
+                                    bill.status = 'Sebagian';
                                 }
                             }
                         });
                     } else {
-                        // Non-Bulanan (Tahunan, Sekali, Bebas)
-                        const bid = `BILL-${pos.id}-${st.nis}`;
+                        // Non-Bulanan (Tahunan, Sekali, Bebas, LKS, Seragam, dll.)
+                        const bid = 'BILL-' + pos.id + '-' + st.nis;
                         let bill = state.bills.find(b => b.nis === st.nis && (
                             b.id === bid || b.posId === pos.id
                         ));
@@ -2519,43 +2635,51 @@ function respondOutput(obj, callback) {
                             state.bills.push({
                                 id: bid,
                                 nis: st.nis,
+                                student_id: st.nis,
                                 posId: pos.id,
+                                payment_type_id: pos.id,
+                                academic_year_id: pos.academic_year_id,
                                 namaPos: pos.nama,
                                 kategori: pos.kategori,
                                 nominal: pos.nominal,
                                 dibayar: 0,
                                 status: 'Belum Lunas',
-                                tahun_ajaran: pos.tahun_ajaran || currentTA
+                                tahun_ajaran: pos.tahun_ajaran,
+                                semester: pos.semester || null,
+                                targetKelas: pos.targetKelas
                             });
                         } else {
                             bill.posId = pos.id;
+                            bill.payment_type_id = pos.id;
+                            bill.academic_year_id = pos.academic_year_id;
                             bill.namaPos = pos.nama;
                             bill.kategori = pos.kategori;
-                            bill.tahun_ajaran = pos.tahun_ajaran || currentTA;
-                            // Aturan Snapshot Nominal (Section J):
+                            bill.tahun_ajaran = pos.tahun_ajaran;
+                            bill.semester = pos.semester || null;
+                            bill.targetKelas = pos.targetKelas;
+                            // Aturan Snapshot Nominal:
                             if (bill.dibayar === 0) {
                                 bill.nominal = pos.nominal;
                                 bill.status = 'Belum Lunas';
-                            } else if (bill.status === 'Lunas') {
-                                bill.nominal = bill.dibayar;
+                            } else if (bill.dibayar >= bill.nominal) {
+                                bill.status = 'Lunas';
                             } else {
-                                bill.nominal = Math.max(bill.dibayar, pos.nominal);
-                                bill.status = bill.dibayar >= bill.nominal ? 'Lunas' : 'Cicilan';
+                                bill.status = 'Sebagian';
                             }
                         }
                     }
                 });
             });
 
-            // 3. Pastikan tidak ada duplikasi tagihan untuk siswa dan namaPos yang sama
+            // 3. Pastikan tidak ada duplikasi tagihan (Section 17)
             const uniqueBillsMap = new Map();
             state.bills.forEach(b => {
-                const key = `${b.nis}_${b.posId}_${b.namaPos}`;
+                const key = b.nis + '_' + b.posId + '_' + b.namaPos + '_' + (b.tahun_ajaran || '');
                 if (uniqueBillsMap.has(key)) {
                     const existing = uniqueBillsMap.get(key);
                     existing.dibayar = Math.max(existing.dibayar, b.dibayar);
                     existing.nominal = Math.max(existing.nominal, b.nominal);
-                    existing.status = existing.dibayar >= existing.nominal ? 'Lunas' : (existing.dibayar > 0 ? 'Cicilan' : 'Belum Lunas');
+                    existing.status = existing.dibayar >= existing.nominal ? 'Lunas' : (existing.dibayar > 0 ? 'Sebagian' : 'Belum Lunas');
                 } else {
                     uniqueBillsMap.set(key, b);
                 }
@@ -2579,7 +2703,6 @@ function respondOutput(obj, callback) {
                 });
             }
         }
-
 
         function ensureBillsForStudents() {
             syncAllStudentBillsWithPOS(false);
@@ -2936,10 +3059,25 @@ function respondOutput(obj, callback) {
 
         
         /* ====================================================================
-         * MODUL MULTI JENIS PEMBAYARAN MATRIKS & KOREKSI CICILAN REAL-TIME
+         * MODUL "MAU BAYAR YANG MANA?", ACADEMIC YEAR ENGINE & MULTI PEMBAYARAN
          * ==================================================================== */
         let selectedTrxBillIds = [];
         let activeModalBillIds = [];
+        let selectedTrxAcademicYear = null;
+
+        function getActiveTAString() {
+            const act = getActiveAcademicYear();
+            return act.ta || state.activeTA || '2026/2027';
+        }
+
+        function changeTrxAcademicYear(newTa) {
+            selectedTrxAcademicYear = newTa;
+            if (selectedTrxStudentNis) {
+                renderMauBayarYangMana(selectedTrxStudentNis, newTa);
+                renderStudentMatrixAndBills(selectedTrxStudentNis);
+                refreshStudentTunggakanHeader(selectedTrxStudentNis, newTa);
+            }
+        }
 
         function selectStudentForPayment(nis) {
             selectedTrxStudentNis = nis;
@@ -2947,7 +3085,12 @@ function respondOutput(obj, callback) {
             const st = state.students.find(s => s.nis === nis);
             if(!st) return;
 
-            // Sinkronkan tagihan siswa dengan master jenis pembayaran aktif
+            // Default Tahun Ajaran di Menu Pembayaran Siswa ke Tahun Ajaran yang AKTIF (Section 3 & 14)
+            if (!selectedTrxAcademicYear) {
+                selectedTrxAcademicYear = getActiveTAString();
+            }
+
+            // Sinkronkan tagihan siswa dengan master jenis pembayaran aktif secara otomatis (Section 8 & 18)
             syncAllStudentBillsWithPOS(false);
 
             showView('transaksi');
@@ -2955,30 +3098,34 @@ function respondOutput(obj, callback) {
             const container = document.getElementById('transaksi-active-student-container');
             container.classList.remove('hidden');
 
-            // Student Header
+            // Student Header Info (Section 6)
             document.getElementById('trx-student-name').innerText = st.nama;
             document.getElementById('trx-student-info').innerText = `NIS: ${st.nis} | Kelas: ${st.kelas}`;
             document.getElementById('trx-student-parents').innerText = `Wali: ${st.ayah} (${st.hp})`;
             document.getElementById('trx-student-avatar').innerText = st.nama.split(' ').map(n=>n[0]).join('');
 
-            // Hitung total tunggakan siswa
-            refreshStudentTunggakanHeader(nis);
+            // Hitung total tunggakan siswa untuk tahun ajaran terpilih
+            refreshStudentTunggakanHeader(nis, selectedTrxAcademicYear);
 
-            // Render SPP & Pos Lainnya
+            // RENDER SECTION UTAMA: "MAU BAYAR YANG MANA?" (Section 6 & 7)
+            renderMauBayarYangMana(nis, selectedTrxAcademicYear);
+
+            // Render SPP Matrix & Tagihan Lainnya
             renderStudentMatrixAndBills(nis);
 
-            // Render History Table for Student dengan Dukungan VOID & Reversal
+            // Render History Table for Student
             renderStudentTrxHistory(nis);
 
             // Update status toolbar pilihan
             updateSelectionToolbarUI();
         }
 
-                function refreshStudentTunggakanHeader(nis) {
+        function refreshStudentTunggakanHeader(nis, ta) {
+            if (!ta) ta = selectedTrxAcademicYear || getActiveTAString();
             const activePosIds = new Set((state.jenisPembayaran || [])
-                .filter(p => (p.status || 'aktif').toLowerCase() === 'aktif')
+                .filter(p => (p.status || 'aktif').toLowerCase() === 'aktif' && (!p.tahun_ajaran || p.tahun_ajaran === ta))
                 .map(p => p.id));
-            const stBills = (state.bills || []).filter(b => b.nis === nis);
+            const stBills = (state.bills || []).filter(b => b.nis === nis && (!b.tahun_ajaran || b.tahun_ajaran === ta));
             let tunggakan = 0;
             stBills.filter(b => activePosIds.has(b.posId)).forEach(b => { 
                 tunggakan += Math.max(0, (b.nominal - b.dibayar)); 
@@ -2989,11 +3136,332 @@ function respondOutput(obj, callback) {
             }
         }
 
+        /* ====================================================================
+         * SECTION 6 & 7: IMPLEMENTASI "MAU BAYAR YANG MANA?"
+         * ==================================================================== */
+        function renderMauBayarYangMana(nis, ta) {
+            if (!nis) nis = selectedTrxStudentNis;
+            if (!ta) ta = selectedTrxAcademicYear || getActiveTAString();
+            selectedTrxAcademicYear = ta;
+
+            const st = (state.students || []).find(s => s.nis === nis);
+            if (!st) return;
+
+            // 1. Update Academic Year Badge & Dropdown Switcher (Section 14)
+            const activeTaString = getActiveTAString();
+            const taBadge = document.getElementById('trx-active-ta-badge');
+            if (taBadge) {
+                taBadge.innerText = `${ta} ${ta === activeTaString ? '(AKTIF)' : ''}`;
+                taBadge.className = `px-2.5 py-0.5 ${ta === activeTaString ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'} text-[11px] font-black rounded-full shadow-sm`;
+            }
+
+            const taDropdown = document.getElementById('trx-ta-selector');
+            if (taDropdown) {
+                let taOpts = '';
+                (state.tahunAjarans || []).forEach(t => {
+                    const isAct = (t.status || '').toLowerCase() === 'aktif' || t.ta === activeTaString;
+                    taOpts += `<option value="${t.ta}" ${t.ta === ta ? 'selected' : ''}>${t.ta} ${isAct ? '(Aktif)' : ''}</option>`;
+                });
+                taDropdown.innerHTML = taOpts;
+            }
+
+            const mauBayarTaInfo = document.getElementById('mau-bayar-ta-info');
+            if (mauBayarTaInfo) {
+                mauBayarTaInfo.innerText = `TA: ${ta}`;
+            }
+
+            const cardsContainer = document.getElementById('mau-bayar-cards-container');
+            if (!cardsContainer) return;
+
+            normalizeMasterJenisPembayaran();
+
+            // SINGLE SOURCE OF TRUTH: Ambil seluruh POS AKTIF yang sesuai Tahun Ajaran & Target Kelas Siswa (Section 13)
+            const applicablePOS = (state.jenisPembayaran || []).filter(p => 
+                (p.status || 'aktif').toLowerCase() === 'aktif' && 
+                (!p.tahun_ajaran || p.tahun_ajaran === ta) && 
+                (!p.targetKelas || p.targetKelas === 'Semua Kelas' || p.targetKelas === st.kelas)
+            );
+
+            if (applicablePOS.length === 0) {
+                cardsContainer.innerHTML = `
+                    <div class="col-span-full py-10 px-4 text-center bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
+                        <div class="w-12 h-12 mx-auto mb-2.5 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400">
+                            <i class="fa-solid fa-folder-open text-xl"></i>
+                        </div>
+                        <h4 class="font-bold text-slate-700 dark:text-slate-200 text-sm">Tidak Ada Pos Pembayaran Aktif</h4>
+                        <p class="text-xs text-slate-500 max-w-md mx-auto mt-1">
+                            Tidak ditemukan pos pembayaran aktif untuk santri kelas <b>${st.kelas}</b> pada Tahun Ajaran <b>${ta}</b>.
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Render setiap POS sebagai Card/Button Interaktif (Section 7 & 11)
+            cardsContainer.innerHTML = applicablePOS.map(pos => {
+                let totalNominal = 0;
+                let totalDibayar = 0;
+                let remaining = 0;
+                let isLunas = false;
+                let isSebagian = false;
+                let isBelumBayar = true;
+                let percentPaid = 0;
+                let statusBadgeHtml = '';
+                let buttonHtml = '';
+
+                if (pos.kategori === 'Bulanan') {
+                    // Pos Bulanan (SPP 12 Bulan)
+                    const monthBills = (state.bills || []).filter(b => b.nis === st.nis && b.posId === pos.id && (!b.tahun_ajaran || b.tahun_ajaran === ta));
+                    totalNominal = pos.nominal * 12;
+                    totalDibayar = monthBills.reduce((acc, b) => acc + (b.dibayar || 0), 0);
+                    remaining = Math.max(0, totalNominal - totalDibayar);
+                    const paidMonthsCount = monthBills.filter(b => b.dibayar >= b.nominal).length;
+
+                    isLunas = remaining <= 0 && totalNominal > 0;
+                    isSebagian = totalDibayar > 0 && !isLunas;
+                    isBelumBayar = totalDibayar === 0;
+                    percentPaid = totalNominal > 0 ? Math.min(100, Math.round((totalDibayar / totalNominal) * 100)) : 100;
+
+                    if (isLunas) {
+                        statusBadgeHtml = `
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="px-2.5 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-black text-[11px] rounded-full inline-flex items-center gap-1">
+                                    <i class="fa-solid fa-circle-check text-emerald-500"></i> LUNAS (12 Bulan)
+                                </span>
+                                <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">Rp ${totalNominal.toLocaleString('id-ID')}</span>
+                            </div>
+                        `;
+                        buttonHtml = `
+                            <button type="button" onclick="handleSelectMauBayar('${pos.id}', '${st.nis}')" class="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-bold text-xs rounded-xl border border-emerald-200 dark:border-emerald-800 transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-receipt"></i>
+                                <span>Lihat Matriks SPP</span>
+                            </button>
+                        `;
+                    } else if (isSebagian) {
+                        statusBadgeHtml = `
+                            <div class="space-y-1 mb-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="px-2.5 py-0.5 bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-black text-[11px] rounded-full inline-flex items-center gap-1">
+                                        <i class="fa-solid fa-clock-rotate-left text-amber-500"></i> SEBAGIAN (${paidMonthsCount}/12 Bln)
+                                    </span>
+                                    <span class="text-xs font-bold text-rose-600 dark:text-rose-400">Sisa: Rp ${remaining.toLocaleString('id-ID')}</span>
+                                </div>
+                                <div class="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-amber-500 h-full rounded-full" style="width: ${percentPaid}%"></div>
+                                </div>
+                                <div class="flex justify-between text-[10px] text-slate-400">
+                                    <span>Dibayar: Rp ${totalDibayar.toLocaleString('id-ID')}</span>
+                                    <span>Total: Rp ${totalNominal.toLocaleString('id-ID')}</span>
+                                </div>
+                            </div>
+                        `;
+                        buttonHtml = `
+                            <button type="button" onclick="handleSelectMauBayar('${pos.id}', '${st.nis}')" class="w-full py-2 px-3 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-cash-register"></i>
+                                <span>Bayar SPP Berikutnya</span>
+                            </button>
+                        `;
+                    } else {
+                        statusBadgeHtml = `
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="px-2.5 py-0.5 bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 font-black text-[11px] rounded-full inline-flex items-center gap-1">
+                                    <i class="fa-solid fa-circle-xmark text-rose-500"></i> BELUM BAYAR
+                                </span>
+                                <span class="text-xs font-black text-rose-600 dark:text-rose-400">Sisa: Rp ${totalNominal.toLocaleString('id-ID')}</span>
+                            </div>
+                        `;
+                        buttonHtml = `
+                            <button type="button" onclick="handleSelectMauBayar('${pos.id}', '${st.nis}')" class="w-full py-2 px-3 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-cash-register"></i>
+                                <span>Pilih Bulan & Bayar</span>
+                            </button>
+                        `;
+                    }
+                } else {
+                    // Pos Non-Bulanan (Bebas, Tahunan, Sekali, LKS Semester, Seragam, dll.)
+                    let bill = (state.bills || []).find(b => b.nis === st.nis && b.posId === pos.id && (!b.tahun_ajaran || b.tahun_ajaran === ta));
+                    totalNominal = pos.nominal;
+                    totalDibayar = bill ? (bill.dibayar || 0) : 0;
+                    remaining = Math.max(0, totalNominal - totalDibayar);
+
+                    isLunas = remaining <= 0 && totalNominal > 0;
+                    isSebagian = totalDibayar > 0 && !isLunas;
+                    isBelumBayar = totalDibayar === 0;
+                    percentPaid = totalNominal > 0 ? Math.min(100, Math.round((totalDibayar / totalNominal) * 100)) : 100;
+
+                    if (isLunas) {
+                        statusBadgeHtml = `
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="px-2.5 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-black text-[11px] rounded-full inline-flex items-center gap-1">
+                                    <i class="fa-solid fa-circle-check text-emerald-500"></i> LUNAS
+                                </span>
+                                <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">Rp ${totalNominal.toLocaleString('id-ID')}</span>
+                            </div>
+                        `;
+                        buttonHtml = `
+                            <button type="button" onclick="handleSelectMauBayar('${pos.id}', '${st.nis}')" class="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-bold text-xs rounded-xl border border-emerald-200 dark:border-emerald-800 transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-file-invoice"></i>
+                                <span>Lihat Rincian Kwitansi</span>
+                            </button>
+                        `;
+                    } else if (isSebagian) {
+                        statusBadgeHtml = `
+                            <div class="space-y-1 mb-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="px-2.5 py-0.5 bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-black text-[11px] rounded-full inline-flex items-center gap-1">
+                                        <i class="fa-solid fa-clock-rotate-left text-amber-500"></i> SEBAGIAN
+                                    </span>
+                                    <span class="text-xs font-black text-rose-600 dark:text-rose-400">Sisa: Rp ${remaining.toLocaleString('id-ID')}</span>
+                                </div>
+                                <div class="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-amber-500 h-full rounded-full" style="width: ${percentPaid}%"></div>
+                                </div>
+                                <div class="flex justify-between text-[10px] text-slate-400">
+                                    <span>Dibayar: Rp ${totalDibayar.toLocaleString('id-ID')}</span>
+                                    <span>Tagihan: Rp ${totalNominal.toLocaleString('id-ID')}</span>
+                                </div>
+                            </div>
+                        `;
+                        buttonHtml = `
+                            <button type="button" onclick="handleSelectMauBayar('${pos.id}', '${st.nis}')" class="w-full py-2 px-3 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-hand-holding-dollar"></i>
+                                <span>Cicil Lanjut</span>
+                            </button>
+                        `;
+                    } else {
+                        statusBadgeHtml = `
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="px-2.5 py-0.5 bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 font-black text-[11px] rounded-full inline-flex items-center gap-1">
+                                    <i class="fa-solid fa-circle-xmark text-rose-500"></i> BELUM BAYAR
+                                </span>
+                                <span class="text-xs font-black text-rose-600 dark:text-rose-400">Sisa: Rp ${totalNominal.toLocaleString('id-ID')}</span>
+                            </div>
+                        `;
+                        buttonHtml = `
+                            <button type="button" onclick="handleSelectMauBayar('${pos.id}', '${st.nis}')" class="w-full py-2 px-3 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-cash-register"></i>
+                                <span>Bayar Sekarang</span>
+                            </button>
+                        `;
+                    }
+                }
+
+                const cardBorder = isLunas ? 'border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/20 dark:bg-emerald-950/10' : (isSebagian ? 'border-amber-300 dark:border-amber-800 bg-amber-50/20 dark:bg-amber-950/10' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800');
+
+                return `
+                    <div class="rounded-2xl border ${cardBorder} p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative group select-none">
+                        <div>
+                            <div class="flex items-start justify-between gap-1.5 mb-2">
+                                <div class="flex flex-wrap items-center gap-1">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
+                                        pos.kategori === 'Bulanan' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' :
+                                        pos.kategori === 'Tahunan' ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' :
+                                        pos.kategori === 'Sekali' ? 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300' :
+                                        'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
+                                    }">
+                                        ${pos.kategori}
+                                    </span>
+                                    ${pos.semester ? `
+                                        <span class="px-1.5 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 rounded text-[10px] font-bold">
+                                            Sem ${pos.semester}
+                                        </span>
+                                    ` : ''}
+                                </div>
+                                <span class="text-[10px] font-mono text-slate-400 font-bold">${pos.kode || pos.id}</span>
+                            </div>
+
+                            <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm mb-1 leading-snug line-clamp-2" title="${pos.nama}">
+                                ${pos.nama}
+                            </h4>
+                            <p class="text-[11px] text-slate-500 line-clamp-1 mb-3">${pos.deskripsi || pos.ket || '-'}</p>
+                        </div>
+
+                        <div class="pt-2 border-t border-slate-100 dark:border-slate-700/80">
+                            ${statusBadgeHtml}
+                            <div class="mt-2.5">
+                                ${buttonHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        /* ====================================================================
+         * AKSI KLIK PADA PILIHAN "MAU BAYAR YANG MANA?"
+         * ==================================================================== */
+        function handleSelectMauBayar(posId, nis) {
+            if (!nis) nis = selectedTrxStudentNis;
+            const pos = (state.jenisPembayaran || []).find(p => p.id === posId);
+            if (!pos) return;
+
+            const ta = selectedTrxAcademicYear || getActiveTAString();
+
+            if (pos.kategori === 'Bulanan') {
+                // Smooth scroll ke section matriks SPP bulanan
+                const sppSection = document.getElementById('spp-months-grid');
+                if (sppSection) {
+                    sppSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    sppSection.classList.add('ring-2', 'ring-brand-500', 'rounded-2xl');
+                    setTimeout(() => {
+                        sppSection.classList.remove('ring-2', 'ring-brand-500');
+                    }, 2000);
+                }
+                return;
+            }
+
+            // Untuk Pos Non-Bulanan: Ambil atau bentuk tagihan siswa
+            const st = state.students.find(s => s.nis === nis);
+            if (!st) return;
+
+            let bill = (state.bills || []).find(b => b.nis === nis && b.posId === pos.id && (!b.tahun_ajaran || b.tahun_ajaran === ta));
+            if (!bill) {
+                bill = {
+                    id: `BILL-${pos.id}-${nis}`,
+                    nis: nis,
+                    student_id: nis,
+                    posId: pos.id,
+                    payment_type_id: pos.id,
+                    academic_year_id: pos.academic_year_id,
+                    namaPos: pos.nama,
+                    kategori: pos.kategori,
+                    nominal: pos.nominal,
+                    dibayar: 0,
+                    status: 'Belum Lunas',
+                    tahun_ajaran: pos.tahun_ajaran || ta,
+                    semester: pos.semester || null,
+                    targetKelas: pos.targetKelas
+                };
+                if (!state.bills) state.bills = [];
+                state.bills.push(bill);
+                saveState();
+            }
+
+            // Jika sudah lunas, tampilkan kwitansi transaksi terakhir
+            if (bill.dibayar >= bill.nominal && bill.nominal > 0) {
+                const paidTrx = (state.transactions || []).find(t => t.nis === nis && (t.posId === pos.id || t.posNama === pos.nama));
+                if (paidTrx) {
+                    showKwitansiModal(paidTrx, st);
+                } else {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Tagihan Lunas',
+                        text: `Tagihan "${pos.nama}" untuk santri ini sudah berstatus LUNAS penuh.`,
+                        confirmButtonColor: '#0284c7'
+                    });
+                }
+                return;
+            }
+
+            // Buka Modal Bayar untuk POS yang dipilih (Dapat dicicil atau dibayar lunas)
+            openModalBayarMulti([bill.id], nis);
+        }
+
         function renderStudentMatrixAndBills(nis) {
             const st = state.students.find(s => s.nis === nis);
             if (!st) return;
 
-            const currentTA = state.activeTA || '2026/2027';
+            const currentTA = selectedTrxAcademicYear || getActiveTAString();
             // Single Source of Truth: Hanya ambil pos yang AKTIF, sesuai Tahun Ajaran, dan target kelas siswa
             const activeMasterPOS = (state.jenisPembayaran || []).filter(p => 
                 (p.status || 'aktif').toLowerCase() === 'aktif' && 
@@ -3001,18 +3469,20 @@ function respondOutput(obj, callback) {
                 (!p.targetKelas || p.targetKelas === 'Semua Kelas' || p.targetKelas === st.kelas)
             );
             const activePosIds = new Set(activeMasterPOS.map(p => p.id));
-            const stBills = (state.bills || []).filter(b => b.nis === nis);
+            const stBills = (state.bills || []).filter(b => b.nis === nis && (!b.tahun_ajaran || b.tahun_ajaran === currentTA));
 
             // Render SPP Months Grid (Bulanan)
             const monthsGrid = document.getElementById('spp-months-grid');
             const sppHint = document.getElementById('spp-matrix-rate-hint');
+            const sppBadge = document.getElementById('spp-matrix-ta-badge');
+            if (sppBadge) sppBadge.innerText = `TA ${currentTA}`;
+
             const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
             
             // Cari pos bulanan aktif HANYA dari Master Pos Aktif
             const posBulanan = activeMasterPOS.find(p => p.kategori === 'Bulanan');
 
             if (!posBulanan) {
-                // Empty state jika TIDAK ADA pos bulanan yang aktif (Tanpa hardcoded SPP palsu!)
                 if (sppHint) {
                     sppHint.innerText = 'Tidak ada pos pembayaran SPP (Bulanan) yang aktif untuk tahun ajaran / kelas ini.';
                 }
@@ -3023,7 +3493,7 @@ function respondOutput(obj, callback) {
                                 <i class="fa-solid fa-calendar-xmark text-lg"></i>
                             </div>
                             <p class="font-bold text-slate-600 dark:text-slate-300 mb-0.5">Belum Ada Tagihan SPP Aktif</p>
-                            <p class="text-[11px] text-slate-400">Pos pembayaran SPP (Bulanan) tidak aktif atau belum dibuat di Master Data.</p>
+                            <p class="text-[11px] text-slate-400">Pos pembayaran SPP (Bulanan) tidak aktif atau belum dibuat pada Tahun Ajaran ${currentTA}.</p>
                         </div>
                     `;
                 }
@@ -3035,16 +3505,19 @@ function respondOutput(obj, callback) {
                 if (monthsGrid) {
                     monthsGrid.innerHTML = months.map((m, idx) => {
                         const billId = `BILL-${posBulanan.id}-${st.nis}-${idx}`;
-                        let bill = stBills.find(b => (
+                        let bill = state.bills.find(b => b.nis === st.nis && (
                             b.id === billId || 
-                            (b.posId === posBulanan.id && (b.namaPos === `SPP ${m}` || b.namaPos === `${posBulanan.nama} (${m})` || (b.kategori === 'Bulanan' && b.namaPos.toLowerCase().includes(m.toLowerCase()))))
+                            (b.posId === posBulanan.id && (!b.tahun_ajaran || b.tahun_ajaran === currentTA) && (b.namaPos === `SPP ${m}` || b.namaPos === `${posBulanan.nama} (${m})` || (b.kategori === 'Bulanan' && b.namaPos.toLowerCase().includes(m.toLowerCase()))))
                         ));
 
                         if (!bill) {
                             bill = {
                                 id: billId,
                                 nis: st.nis,
+                                student_id: st.nis,
                                 posId: posBulanan.id,
+                                payment_type_id: posBulanan.id,
+                                academic_year_id: posBulanan.academic_year_id,
                                 namaPos: `SPP ${m}`,
                                 kategori: 'Bulanan',
                                 nominal: posBulanan.nominal,
@@ -3056,7 +3529,7 @@ function respondOutput(obj, callback) {
                         }
 
                         const sisa = Math.max(0, bill.nominal - bill.dibayar);
-                        const isPaid = sisa <= 0;
+                        const isPaid = sisa <= 0 && bill.nominal > 0;
                         const isCicilan = !isPaid && bill.dibayar > 0;
                         const isSelected = selectedTrxBillIds.includes(bill.id);
 
@@ -3111,7 +3584,6 @@ function respondOutput(obj, callback) {
             }
 
             // Render Other Bills (Tahunan, Bebas/Cicilan, Sekali)
-            // HANYA tampilkan pos aktif atau tagihan yang memiliki saldo cicilan berjalan
             const otherBillsList = document.getElementById('other-bills-list');
             const otherBills = stBills.filter(b => b.kategori !== 'Bulanan' && (activePosIds.has(b.posId) || (b.dibayar > 0 && Math.max(0, b.nominal - b.dibayar) > 0)));
 
@@ -3123,13 +3595,13 @@ function respondOutput(obj, callback) {
                                 <i class="fa-solid fa-inbox text-base"></i>
                             </div>
                             <p class="font-semibold text-slate-600 dark:text-slate-300">Belum Ada Tagihan Lainnya</p>
-                            <p class="text-[11px] text-slate-400">Tidak ada pos tagihan non-SPP yang aktif untuk santri ini.</p>
+                            <p class="text-[11px] text-slate-400">Tidak ada pos tagihan non-SPP yang aktif untuk santri ini pada TA ${currentTA}.</p>
                         </div>
                     `;
                 } else {
                     otherBillsList.innerHTML = otherBills.map(b => {
                         const remaining = Math.max(0, b.nominal - b.dibayar);
-                        const isLunas = remaining <= 0;
+                        const isLunas = remaining <= 0 && b.nominal > 0;
                         const isSelected = selectedTrxBillIds.includes(b.id);
                         const percentPaid = b.nominal > 0 ? Math.min(100, Math.round((b.dibayar / b.nominal) * 100)) : 100;
 
@@ -3151,40 +3623,36 @@ function respondOutput(obj, callback) {
                                                    onchange="toggleSelectBill('${b.id}', this.checked)"
                                                    class="w-4 h-4 mt-0.5 text-brand-600 rounded border-slate-300 focus:ring-brand-500 cursor-pointer">
                                         ` : `
-                                            <i class="fa-solid fa-circle-check text-emerald-500 mt-0.5 text-sm"></i>
+                                            <span class="w-4 h-4 mt-0.5 flex items-center justify-center text-emerald-500"><i class="fa-solid fa-check text-xs"></i></span>
                                         `}
                                         <div>
-                                            <div class="flex items-center space-x-2">
-                                                <span class="font-bold text-xs text-slate-800 dark:text-slate-100">${b.namaPos}</span>
-                                                <span class="px-1.5 py-0.2 bg-slate-100 dark:bg-slate-700 text-slate-500 text-[10px] rounded font-semibold">${b.kategori}</span>
+                                            <h4 class="font-bold text-xs text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                                <span>${b.namaPos}</span>
+                                                <span class="text-[9px] px-1.5 py-0.2 bg-slate-200 dark:bg-slate-600 rounded text-slate-600 dark:text-slate-300">${b.kategori}</span>
+                                            </h4>
+                                            <div class="flex items-center space-x-2 text-[11px] text-slate-500 mt-0.5">
+                                                <span>Total: <b>Rp ${b.nominal.toLocaleString('id-ID')}</b></span>
+                                                <span>•</span>
+                                                ${isLunas ? `
+                                                    <span class="text-emerald-600 font-bold">Lunas</span>
+                                                ` : (b.dibayar > 0 ? `
+                                                    <span class="text-amber-600 font-bold">Dibayar: Rp ${b.dibayar.toLocaleString('id-ID')}</span>
+                                                    <span>•</span>
+                                                    <span class="text-rose-600 font-extrabold">Sisa: Rp ${remaining.toLocaleString('id-ID')}</span>
+                                                ` : `
+                                                    <span class="text-rose-600 font-bold">Belum Bayar</span>
+                                                `)}
                                             </div>
-                                            <span class="text-[11px] text-slate-500">Total: Rp ${b.nominal.toLocaleString('id-ID')}</span>
-                                            
-                                            <!-- Real-time Balance / Installment Progress -->
-                                            ${!isLunas ? `
-                                                <div class="mt-1 space-y-1">
-                                                    <div class="flex items-center space-x-2 text-[11px]">
-                                                        <span class="text-slate-600 dark:text-slate-300">Dibayar: <b class="text-emerald-600">Rp ${b.dibayar.toLocaleString('id-ID')}</b></span>
-                                                        <span>•</span>
-                                                        <span class="text-rose-600 dark:text-rose-400 font-bold">Sisa: Rp ${remaining.toLocaleString('id-ID')}</span>
-                                                    </div>
-                                                    <div class="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-1.5 overflow-hidden">
-                                                        <div class="bg-emerald-500 h-1.5 rounded-full" style="width: ${percentPaid}%"></div>
-                                                    </div>
-                                                </div>
-                                            ` : `
-                                                <span class="text-[10px] text-emerald-600 font-bold block mt-0.5">Lunas Penuh (Rp ${b.nominal.toLocaleString('id-ID')})</span>
-                                            `}
                                         </div>
                                     </div>
 
-                                    <div>
-                                        ${isLunas ? `
-                                            <span class="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200 font-bold text-[10px] rounded-full">LUNAS</span>
-                                        ` : `
-                                            <button type="button" onclick="openModalBayar('${b.id}', '${st.nis}')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow transition">
-                                                ${b.dibayar > 0 ? 'Cicil Lagi' : 'Bayar'}
+                                    <div class="text-right">
+                                        ${!isLunas ? `
+                                            <button type="button" onclick="openModalBayar('${b.id}', '${st.nis}')" class="px-2.5 py-1 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-[11px] font-bold shadow-sm transition">
+                                                ${b.dibayar > 0 ? 'Cicil' : 'Bayar'}
                                             </button>
+                                        ` : `
+                                            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">LUNAS</span>
                                         `}
                                     </div>
                                 </div>
@@ -3193,12 +3661,7 @@ function respondOutput(obj, callback) {
                     }).join('');
                 }
             }
-
-            renderStudentTrxHistory(nis);
-            refreshStudentTunggakanHeader(nis);
-            updateSelectionToolbarUI();
         }
-
 
         function renderStudentTrxHistory(nis) {
             const stTrx = (state.transactions || []).filter(t => t.nis === nis);
@@ -3795,6 +4258,9 @@ function respondOutput(obj, callback) {
 
                 const newTrx = {
                     id: 'TRX-' + UtilitiesUUID(),
+                    academic_year_id: masterPos.academic_year_id || ('TA-' + (masterPos.tahun_ajaran || '').replace(/[^a-zA-Z0-9]/g, '')),
+                    payment_type_id: masterPos.id,
+                    semester: masterPos.semester || null,
                     idempotencyKey: idempotencyKey,
                     kwitansiNo: kwtNo,
                     tanggal: todayStr,
@@ -3837,6 +4303,9 @@ function respondOutput(obj, callback) {
             saveState();
             closeModalBayar();
             renderStudentMatrixAndBills(st.nis);
+            if (typeof renderMauBayarYangMana === 'function') {
+                renderMauBayarYangMana(st.nis, selectedTrxAcademicYear);
+            }
             renderDashboard();
 
             // Tampilkan Notifikasi Sukses + Opsi Cetak Kwitansi
@@ -5316,29 +5785,67 @@ function respondOutput(obj, callback) {
             
             normalizeMasterJenisPembayaran();
 
-            if (!state.jenisPembayaran || state.jenisPembayaran.length === 0) {
+            // Populate Filter Dropdown Tahun Ajaran jika elemen ada
+            const filterTaEl = document.getElementById('filter-pos-ta');
+            if (filterTaEl) {
+                const activeTaObj = getActiveAcademicYear();
+                const activeTa = activeTaObj.ta || state.activeTA || '2026/2027';
+                const currentFilterVal = filterTaEl.value;
+
+                if (filterTaEl.options.length === 0) {
+                    let opts = '<option value="all">Semua Tahun Ajaran</option>';
+                    (state.tahunAjarans || []).forEach(t => {
+                        const isAct = (t.status || '').toLowerCase() === 'aktif';
+                        opts += `<option value="${t.ta}">${t.ta} ${isAct ? '(Aktif)' : ''}</option>`;
+                    });
+                    filterTaEl.innerHTML = opts;
+                    // Default filter ke Tahun Ajaran aktif (Section 4)
+                    filterTaEl.value = activeTa;
+                }
+            }
+
+            const selectedTa = filterTaEl ? filterTaEl.value : 'all';
+            const filterStatusEl = document.getElementById('filter-pos-status');
+            const selectedStatus = filterStatusEl ? filterStatusEl.value : 'all';
+
+            // Filter data POS berdasarkan Tahun Ajaran dan Status (Section 4 & 5)
+            let filteredPOS = (state.jenisPembayaran || []);
+            if (selectedTa !== 'all') {
+                filteredPOS = filteredPOS.filter(p => (p.tahun_ajaran || state.activeTA || '2026/2027') === selectedTa);
+            }
+            if (selectedStatus !== 'all') {
+                filteredPOS = filteredPOS.filter(p => (p.status || 'aktif').toLowerCase() === selectedStatus);
+            }
+
+            // Update badge info jumlah
+            const countInfoEl = document.getElementById('pos-count-info');
+            if (countInfoEl) {
+                countInfoEl.innerText = `Menampilkan ${filteredPOS.length} dari ${(state.jenisPembayaran || []).length} POS Pembayaran`;
+            }
+
+            if (filteredPOS.length === 0) {
                 grid.innerHTML = `
                     <div class="col-span-full bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 p-12 text-center">
                         <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-brand-50 dark:bg-brand-950/50 flex items-center justify-center text-brand-500">
                             <i class="fa-solid fa-tags text-2xl"></i>
                         </div>
-                        <h3 class="font-bold text-slate-800 dark:text-slate-100 text-base mb-1">Belum Ada Pos Pembayaran</h3>
-                        <p class="text-xs text-slate-500 mb-4 max-w-sm mx-auto">Klik tombol di atas untuk menambahkan pos pembayaran baru seperti SPP, Uang Seragam, atau Uang Kegiatan.</p>
+                        <h3 class="font-bold text-slate-800 dark:text-slate-100 text-base mb-1">Tidak Ada Pos Pembayaran</h3>
+                        <p class="text-xs text-slate-500 mb-4 max-w-sm mx-auto">Tidak ditemukan pos pembayaran untuk filter Tahun Ajaran: <b>${selectedTa}</b> dan Status: <b>${selectedStatus}</b>.</p>
                         <button onclick="openModalAddPos()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow transition">
-                            + Tambah Pos Pembayaran
+                            + Tambah Pos Pembayaran Baru
                         </button>
                     </div>
                 `;
                 return;
             }
 
-            grid.innerHTML = state.jenisPembayaran.map(p => {
+            grid.innerHTML = filteredPOS.map(p => {
                 const isActive = (p.status || 'aktif').toLowerCase() === 'aktif';
                 return `
-                    <div class="bg-white dark:bg-slate-800 rounded-2xl border ${isActive ? 'border-slate-200/80 dark:border-slate-700' : 'border-slate-200/50 dark:border-slate-800 opacity-75'} p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between relative group">
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl border ${isActive ? 'border-slate-200/80 dark:border-slate-700' : 'border-rose-200/60 dark:border-rose-900/40 bg-slate-50/50 dark:bg-slate-800/60 opacity-80'} p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between relative group">
                         <div>
                             <div class="flex justify-between items-start mb-2">
-                                <div class="flex items-center space-x-1.5">
+                                <div class="flex flex-wrap items-center gap-1.5">
                                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                                         p.kategori === 'Bulanan' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' :
                                         p.kategori === 'Tahunan' ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' :
@@ -5347,13 +5854,18 @@ function respondOutput(obj, callback) {
                                     }">
                                         ${p.kategori}
                                     </span>
+                                    ${p.semester ? `
+                                        <span class="px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 rounded-full text-[10px] font-bold">
+                                            Semester ${p.semester}
+                                        </span>
+                                    ` : ''}
                                     <span class="text-[10px] text-slate-400 font-mono font-bold">${p.kode || p.id}</span>
                                 </div>
 
-                                <!-- Status Badge & Action Controls (SECTION C & D) -->
+                                <!-- Status Badge & Action Controls (Section 5) -->
                                 <div class="flex items-center space-x-1">
-                                    <button onclick="toggleStatusJenisPembayaran('${p.id}')" class="px-2 py-1 ${isActive ? 'bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-amber-800 dark:bg-slate-700 dark:hover:bg-amber-950/60 dark:text-slate-300 dark:hover:text-amber-300' : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'} font-bold text-[10px] rounded transition flex items-center space-x-1" title="${isActive ? 'Klik untuk Nonaktifkan Pos' : 'Klik untuk Mengaktifkan Kembali Pos'}">
-                                        <i class="fa-solid ${isActive ? 'fa-toggle-on text-emerald-500' : 'fa-toggle-off text-slate-400'} text-xs"></i>
+                                    <button onclick="toggleStatusJenisPembayaran('${p.id}')" class="px-2 py-1 ${isActive ? 'bg-emerald-50 hover:bg-amber-50 text-emerald-700 hover:text-amber-700 border border-emerald-200 hover:border-amber-200' : 'bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-700'} font-bold text-[10px] rounded transition flex items-center space-x-1" title="${isActive ? 'Klik untuk Nonaktifkan Pos' : 'Klik untuk Mengaktifkan Kembali Pos'}">
+                                        <i class="fa-solid ${isActive ? 'fa-toggle-on text-emerald-500 text-xs' : 'fa-toggle-off text-slate-400 text-xs'}"></i>
                                         <span>${isActive ? 'Aktif' : 'Nonaktif'}</span>
                                     </button>
                                     <button onclick="openModalEditPos('${p.id}')" class="p-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 rounded transition" title="Edit Pos Pembayaran">
@@ -5401,7 +5913,11 @@ function respondOutput(obj, callback) {
             syncAllStudentBillsWithPOS(false);
             renderJenisPembayaran();
             renderDashboard();
-            if (selectedTrxStudentNis) renderStudentMatrixAndBills(selectedTrxStudentNis);
+            if (selectedTrxStudentNis) {
+                renderStudentMatrixAndBills(selectedTrxStudentNis);
+                renderMauBayarYangMana(selectedTrxStudentNis, selectedTrxAcademicYear);
+                refreshStudentTunggakanHeader(selectedTrxStudentNis);
+            }
 
             Swal.fire({
                 icon: 'success',
@@ -5417,12 +5933,12 @@ function respondOutput(obj, callback) {
             const pos = state.jenisPembayaran.find(p => p.id === id);
             if (!pos) return;
 
-            const relatedTrxCount = (state.transactions || []).filter(t => t.posId === id || t.posNama === pos.nama).length;
-            const relatedPaidBillsCount = (state.bills || []).filter(b => b.posId === id && b.dibayar > 0).length;
+            const relatedTrxCount = (state.transactions || []).filter(t => t.posId === id || t.payment_type_id === id || t.posNama === pos.nama).length;
+            const relatedPaidBillsCount = (state.bills || []).filter(b => (b.posId === id || b.payment_type_id === id) && b.dibayar > 0).length;
             const hasHistory = relatedTrxCount > 0 || relatedPaidBillsCount > 0;
 
             if (hasHistory) {
-                // SUDAH pernah digunakan: JANGAN hapus record secara permanen. Ubah status menjadi nonaktif (Section D)
+                // Pos yang sudah memiliki riwayat transaksi dilindungi dari hard delete (Section 5 & 21)
                 Swal.fire({
                     title: 'Pos Sudah Pernah Digunakan',
                     html: `
@@ -5447,13 +5963,17 @@ function respondOutput(obj, callback) {
                         syncAllStudentBillsWithPOS(false);
                         renderJenisPembayaran();
                         renderDashboard();
-                        if (selectedTrxStudentNis) renderStudentMatrixAndBills(selectedTrxStudentNis);
+                        if (selectedTrxStudentNis) {
+                            renderStudentMatrixAndBills(selectedTrxStudentNis);
+                            renderMauBayarYangMana(selectedTrxStudentNis, selectedTrxAcademicYear);
+                            refreshStudentTunggakanHeader(selectedTrxStudentNis);
+                        }
 
                         Swal.fire('Pos Dinonaktifkan', `Pos "${pos.nama}" berhasil dinonaktifkan. Riwayat transaksi tetap tersimpan aman.`, 'success');
                     }
                 });
             } else {
-                // BELUM pernah digunakan: boleh dihapus secara permanen (Section D)
+                // Pos baru yang belum pernah digunakan transaksi boleh dihapus permanen
                 Swal.fire({
                     title: 'Hapus Pos Pembayaran?',
                     text: `Pos "${pos.nama}" belum pernah digunakan transaksi. Yakin ingin menghapus permanen dari master data?`,
@@ -5467,12 +5987,16 @@ function respondOutput(obj, callback) {
                     if (res.isConfirmed) {
                         const posNama = pos.nama;
                         state.jenisPembayaran = state.jenisPembayaran.filter(p => p.id !== id);
-                        state.bills = (state.bills || []).filter(b => b.posId !== id);
+                        state.bills = (state.bills || []).filter(b => b.posId !== id && b.payment_type_id !== id);
 
                         syncAllStudentBillsWithPOS(false);
                         renderJenisPembayaran();
                         renderDashboard();
-                        if (selectedTrxStudentNis) renderStudentMatrixAndBills(selectedTrxStudentNis);
+                        if (selectedTrxStudentNis) {
+                            renderStudentMatrixAndBills(selectedTrxStudentNis);
+                            renderMauBayarYangMana(selectedTrxStudentNis, selectedTrxAcademicYear);
+                            refreshStudentTunggakanHeader(selectedTrxStudentNis);
+                        }
 
                         Swal.fire('Terhapus', `Pos pembayaran "${posNama}" berhasil dihapus secara permanen.`, 'success');
                     }
@@ -5486,8 +6010,10 @@ function respondOutput(obj, callback) {
             if (!pos) return;
 
             const taOptions = (state.tahunAjarans || [{ ta: '2026/2027' }])
-                .map(t => `<option value="${t.ta}" ${(pos.tahun_ajaran || state.activeTA) === t.ta ? 'selected' : ''}>${t.ta}</option>`)
+                .map(t => `<option value="${t.ta}" ${(pos.tahun_ajaran || state.activeTA || '2026/2027') === t.ta ? 'selected' : ''}>${t.ta} (${t.status || 'Aktif'})</option>`)
                 .join('');
+
+            const curSemester = pos.semester ? String(pos.semester) : '';
 
             Swal.fire({
                 title: 'Edit Pos Pembayaran',
@@ -5496,11 +6022,11 @@ function respondOutput(obj, callback) {
                         <div class="grid grid-cols-3 gap-2">
                             <div class="col-span-2">
                                 <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Nama Pos Pembayaran</label>
-                                <input id="swal-edit-pos-nama" class="swal2-input !m-0 !w-full" placeholder="Nama Pos" value="${pos.nama}" required>
+                                <input id="swal-edit-pos-nama" class="swal2-input !m-0 !w-full" value="${pos.nama}" required>
                             </div>
                             <div>
                                 <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Kode Pos</label>
-                                <input id="swal-edit-pos-kode" class="swal2-input !m-0 !w-full" placeholder="Kode" value="${pos.kode || pos.id}">
+                                <input id="swal-edit-pos-kode" class="swal2-input !m-0 !w-full" value="${pos.kode || pos.id}">
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-2">
@@ -5517,13 +6043,22 @@ function respondOutput(obj, callback) {
                                 <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Periode Pembayaran</label>
                                 <select id="swal-edit-pos-periode" class="swal2-input !m-0 !w-full">
                                     <option value="Bulanan" ${pos.periode==='Bulanan'?'selected':''}>Bulanan</option>
+                                    <option value="Semester" ${pos.periode==='Semester'?'selected':''}>Semester</option>
                                     <option value="Tahunan" ${pos.periode==='Tahunan'?'selected':''}>Tahunan</option>
                                     <option value="Sekali Bayar" ${pos.periode==='Sekali Bayar'?'selected':''}>Sekali Bayar</option>
                                     <option value="Bebas" ${pos.periode==='Bebas'?'selected':''}>Bebas / Fleksibel</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-2">
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Semester</label>
+                                <select id="swal-edit-pos-semester" class="swal2-input !m-0 !w-full">
+                                    <option value="" ${!curSemester ? 'selected' : ''}>Non-Semester</option>
+                                    <option value="1" ${curSemester === '1' ? 'selected' : ''}>Semester 1</option>
+                                    <option value="2" ${curSemester === '2' ? 'selected' : ''}>Semester 2</option>
+                                </select>
+                            </div>
                             <div>
                                 <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Target Kelas Siswa</label>
                                 <select id="swal-edit-pos-kelas" class="swal2-input !m-0 !w-full">
@@ -5568,6 +6103,8 @@ function respondOutput(obj, callback) {
                     const kode = document.getElementById('swal-edit-pos-kode').value.trim() || pos.kode || pos.id;
                     const kat = document.getElementById('swal-edit-pos-kat').value;
                     const periode = document.getElementById('swal-edit-pos-periode').value;
+                    const rawSemester = document.getElementById('swal-edit-pos-semester').value;
+                    const semester = rawSemester === '1' ? 1 : (rawSemester === '2' ? 2 : null);
                     const targetKelas = document.getElementById('swal-edit-pos-kelas').value;
                     const tahun_ajaran = document.getElementById('swal-edit-pos-ta').value;
                     const nominal = parseInt(document.getElementById('swal-edit-pos-nominal').value) || 0;
@@ -5578,7 +6115,11 @@ function respondOutput(obj, callback) {
                         Swal.showValidationMessage('Nama pos dan nominal wajib diisi dengan benar');
                         return false;
                     }
-                    return { nama, kode, kat, periode, targetKelas, tahun_ajaran, nominal, status, deskripsi };
+
+                    const taMatch = (state.tahunAjarans || []).find(t => t.ta === tahun_ajaran || t.tahun_ajaran === tahun_ajaran);
+                    const academic_year_id = taMatch ? taMatch.id : ('TA-' + tahun_ajaran.replace(/[^a-zA-Z0-9]/g, ''));
+
+                    return { nama, kode, kat, periode, semester, targetKelas, tahun_ajaran, academic_year_id, nominal, status, deskripsi };
                 }
             }).then((res) => {
                 if (res.isConfirmed && res.value) {
@@ -5586,8 +6127,10 @@ function respondOutput(obj, callback) {
                     pos.kode = res.value.kode;
                     pos.kategori = res.value.kat;
                     pos.periode = res.value.periode;
+                    pos.semester = res.value.semester;
                     pos.targetKelas = res.value.targetKelas;
                     pos.tahun_ajaran = res.value.tahun_ajaran;
+                    pos.academic_year_id = res.value.academic_year_id;
                     pos.nominal = res.value.nominal;
                     pos.status = res.value.status;
                     pos.deskripsi = res.value.deskripsi;
@@ -5598,7 +6141,11 @@ function respondOutput(obj, callback) {
 
                     renderJenisPembayaran();
                     renderDashboard();
-                    if (selectedTrxStudentNis) renderStudentMatrixAndBills(selectedTrxStudentNis);
+                    if (selectedTrxStudentNis) {
+                        renderStudentMatrixAndBills(selectedTrxStudentNis);
+                        renderMauBayarYangMana(selectedTrxStudentNis, selectedTrxAcademicYear);
+                        refreshStudentTunggakanHeader(selectedTrxStudentNis);
+                    }
 
                     Swal.fire('Tersimpan', 'Pos pembayaran dan tagihan siswa berhasil diperbarui dan disinkronkan!', 'success');
                 }
@@ -5607,8 +6154,12 @@ function respondOutput(obj, callback) {
 
         function openModalAddPos() {
             normalizeMasterJenisPembayaran();
-            const taOptions = (state.tahunAjarans || [{ ta: '2026/2027' }])
-                .map(t => `<option value="${t.ta}" ${(state.activeTA || '2026/2027') === t.ta ? 'selected' : ''}>${t.ta}</option>`)
+            const activeTaObj = getActiveAcademicYear();
+            const activeTa = activeTaObj.ta || state.activeTA || '2026/2027';
+
+            // Dropdown Tahun Ajaran pre-selected ke Tahun Ajaran AKTIF (Section 1 & 3)
+            const taOptions = (state.tahunAjarans || [{ ta: activeTa, status: 'Aktif' }])
+                .map(t => `<option value="${t.ta}" ${t.ta === activeTa ? 'selected' : ''}>${t.ta} (${t.status || 'Aktif'})</option>`)
                 .join('');
 
             Swal.fire({
@@ -5617,8 +6168,8 @@ function respondOutput(obj, callback) {
                     <div class="space-y-3 text-left">
                         <div class="grid grid-cols-3 gap-2">
                             <div class="col-span-2">
-                                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Nama Pos Pembayaran</label>
-                                <input id="swal-pos-nama" class="swal2-input !m-0 !w-full" placeholder="misal: SPP, Uang Kegiatan, Gedung">
+                                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Nama Pos Pembayaran *</label>
+                                <input id="swal-pos-nama" class="swal2-input !m-0 !w-full" placeholder="misal: LKS, SPP, Uang Kegiatan">
                             </div>
                             <div>
                                 <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Kode Pos</label>
@@ -5627,53 +6178,71 @@ function respondOutput(obj, callback) {
                         </div>
                         <div class="grid grid-cols-2 gap-2">
                             <div>
-                                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Kategori Tagihan</label>
+                                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Kategori Tagihan *</label>
                                 <select id="swal-pos-kat" class="swal2-input !m-0 !w-full">
                                     <option value="Bulanan">Bulanan (SPP Matrix)</option>
                                     <option value="Tahunan">Tahunan</option>
                                     <option value="Sekali">Sekali Bayar</option>
-                                    <option value="Bebas">Bebas (Dapat Dicicil)</option>
+                                    <option value="Bebas" selected>Bebas (Dapat Dicicil)</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Periode Pembayaran</label>
                                 <select id="swal-pos-periode" class="swal2-input !m-0 !w-full">
                                     <option value="Bulanan">Bulanan</option>
+                                    <option value="Semester">Semester</option>
                                     <option value="Tahunan">Tahunan</option>
                                     <option value="Sekali Bayar">Sekali Bayar</option>
-                                    <option value="Bebas">Bebas / Fleksibel</option>
+                                    <option value="Bebas" selected>Bebas / Fleksibel</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-2">
+                        <div class="grid grid-cols-3 gap-2">
                             <div>
-                                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Target Kelas Siswa</label>
+                                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Semester</label>
+                                <select id="swal-pos-semester" class="swal2-input !m-0 !w-full">
+                                    <option value="" selected>Non-Semester</option>
+                                    <option value="1">Semester 1 (Ganjil)</option>
+                                    <option value="2">Semester 2 (Genap)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Target Kelas Siswa *</label>
                                 <select id="swal-pos-kelas" class="swal2-input !m-0 !w-full">
-                                    <option value="Semua Kelas">Semua Kelas (VII, VIII, IX)</option>
+                                    <option value="Semua Kelas" selected>Semua Kelas (VII, VIII, IX)</option>
                                     <option value="Kelas VII">Khusus Kelas VII</option>
                                     <option value="Kelas VIII">Khusus Kelas VIII</option>
                                     <option value="Kelas IX">Khusus Kelas IX</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Tahun Ajaran</label>
+                                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Tahun Ajaran *</label>
                                 <select id="swal-pos-ta" class="swal2-input !m-0 !w-full">
                                     ${taOptions}
                                 </select>
                             </div>
                         </div>
-                        <div>
-                            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Nominal (Rp)</label>
-                            <input id="swal-pos-nominal" type="number" class="swal2-input !m-0 !w-full" placeholder="Nominal Rp">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Nominal (Rp) *</label>
+                                <input id="swal-pos-nominal" type="number" class="swal2-input !m-0 !w-full" placeholder="misal: 150000" required>
+                            </div>
+                            <div>
+                                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Status Pos *</label>
+                                <select id="swal-pos-status" class="swal2-input !m-0 !w-full">
+                                    <option value="aktif" selected>Aktif</option>
+                                    <option value="nonaktif">Nonaktif</option>
+                                </select>
+                            </div>
                         </div>
                         <div>
                             <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Deskripsi / Keterangan</label>
-                            <input id="swal-pos-ket" class="swal2-input !m-0 !w-full" placeholder="Keterangan singkat">
+                            <input id="swal-pos-ket" class="swal2-input !m-0 !w-full" placeholder="Keterangan singkat tagihan">
                         </div>
                     </div>
                 `,
                 showCancelButton: true,
-                confirmButtonText: 'Generate Tagihan Siswa',
+                confirmButtonText: 'Simpan Pos Pembayaran',
                 cancelButtonText: 'Batal',
                 confirmButtonColor: '#0284c7',
                 preConfirm: () => {
@@ -5681,9 +6250,12 @@ function respondOutput(obj, callback) {
                     let kode = document.getElementById('swal-pos-kode').value.trim();
                     const kat = document.getElementById('swal-pos-kat').value;
                     const periode = document.getElementById('swal-pos-periode').value;
+                    const rawSemester = document.getElementById('swal-pos-semester').value;
+                    const semester = rawSemester === '1' ? 1 : (rawSemester === '2' ? 2 : null);
                     const targetKelas = document.getElementById('swal-pos-kelas').value;
                     const tahun_ajaran = document.getElementById('swal-pos-ta').value;
                     const nominal = parseInt(document.getElementById('swal-pos-nominal').value) || 0;
+                    const status = document.getElementById('swal-pos-status').value;
                     const deskripsi = document.getElementById('swal-pos-ket').value.trim();
 
                     if (!nama || nominal <= 0) {
@@ -5694,7 +6266,11 @@ function respondOutput(obj, callback) {
                         const prefix = nama.split(/\s+/).map(w => w[0]).join('').toUpperCase().substring(0, 4) || 'POS';
                         kode = `${prefix}-${String((state.jenisPembayaran || []).length + 1).padStart(2, '0')}`;
                     }
-                    return { nama, kode, kat, periode, targetKelas, tahun_ajaran, nominal, deskripsi };
+
+                    const taMatch = (state.tahunAjarans || []).find(t => t.ta === tahun_ajaran || t.tahun_ajaran === tahun_ajaran);
+                    const academic_year_id = taMatch ? taMatch.id : ('TA-' + tahun_ajaran.replace(/[^a-zA-Z0-9]/g, ''));
+
+                    return { nama, kode, kat, periode, semester, targetKelas, tahun_ajaran, academic_year_id, nominal, status, deskripsi };
                 }
             }).then((res) => {
                 if (res.isConfirmed && res.value && res.value.nama) {
@@ -5705,27 +6281,34 @@ function respondOutput(obj, callback) {
 
                     state.jenisPembayaran.push({
                         id: newId,
+                        payment_type_id: newId,
                         kode: res.value.kode,
                         nama: res.value.nama,
                         kategori: res.value.kat,
                         periode: res.value.periode,
+                        semester: res.value.semester,
                         targetKelas: res.value.targetKelas,
                         tahun_ajaran: res.value.tahun_ajaran,
+                        academic_year_id: res.value.academic_year_id,
                         nominal: res.value.nominal,
                         deskripsi: res.value.deskripsi || `Tagihan ${res.value.nama} untuk ${res.value.targetKelas}`,
-                        status: 'aktif',
+                        status: res.value.status || 'aktif',
                         created_at: nowIso,
                         updated_at: nowIso
                     });
 
-                    // Sinkronkan seluruh tagihan siswa secara otomatis
+                    // Sinkronkan seluruh tagihan siswa secara otomatis (Section 8)
                     syncAllStudentBillsWithPOS(false);
 
                     renderJenisPembayaran();
                     renderDashboard();
-                    if (selectedTrxStudentNis) renderStudentMatrixAndBills(selectedTrxStudentNis);
+                    if (selectedTrxStudentNis) {
+                        renderStudentMatrixAndBills(selectedTrxStudentNis);
+                        renderMauBayarYangMana(selectedTrxStudentNis, selectedTrxAcademicYear);
+                        refreshStudentTunggakanHeader(selectedTrxStudentNis);
+                    }
 
-                    Swal.fire('Berhasil', `Pos pembayaran "${res.value.nama}" berhasil dibuat dan tagihan seluruh siswa target (${res.value.targetKelas}) telah disinkronkan!`, 'success');
+                    Swal.fire('Berhasil', `Pos pembayaran "${res.value.nama}" (${res.value.tahun_ajaran}) berhasil dibuat dan otomatis tersedia pada Pembayaran Siswa!`, 'success');
                 }
             });
         }
