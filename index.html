@@ -2693,7 +2693,22 @@ function respondOutput(obj, callback) {
             });
         }
 
-        function syncAllStudentBillsWithPOS(showAlert = false) {
+                function isStudentEligibleForPos(pos, student) {
+            if (!pos) return false;
+            if (!student) return true;
+            const target = (pos.targetKelas || '').trim();
+            if (!target || target === 'Semua Kelas' || target === 'Semua' || target === '-' || target.toLowerCase() === 'all') return true;
+            const stClass = (student.kelas || '').trim();
+            if (!stClass) return true;
+            if (target.toLowerCase() === stClass.toLowerCase()) return true;
+            const normTarget = target.toLowerCase().replace(/kelas|\s+|-/g, '');
+            const normSt = stClass.toLowerCase().replace(/kelas|\s+|-/g, '');
+            if (normTarget === normSt) return true;
+            if (normSt.startsWith(normTarget) || normTarget.startsWith(normSt)) return true;
+            return false;
+        }
+
+function syncAllStudentBillsWithPOS(showAlert = false) {
             if (!state.bills) state.bills = [];
             if (!state.students) state.students = [];
             if (!state.jenisPembayaran) state.jenisPembayaran = [];
@@ -2718,7 +2733,7 @@ function respondOutput(obj, callback) {
             // 2. Bentuk dan sinkronkan tagihan siswa dari master pos aktif
             state.students.forEach(st => {
                 activeMasterPOS.forEach(pos => {
-                    const isTargetMatch = !pos.targetKelas || pos.targetKelas === 'Semua Kelas' || pos.targetKelas === st.kelas;
+                    const isTargetMatch = isStudentEligibleForPos(pos, st);
 
                     if (!isTargetMatch) {
                         // Hapus tagihan yang belum dibayar jika siswa tidak sesuai target kelas
@@ -2899,6 +2914,18 @@ function respondOutput(obj, callback) {
             if(viewId === 'jenis-bayar') renderJenisPembayaran();
             if(viewId === 'siswa') renderMasterSiswaTable();
             if(viewId === 'kelas-ta') renderKelasAndTA();
+            if(viewId === 'transaksi') {
+                normalizeMasterJenisPembayaran();
+                syncAllStudentBillsWithPOS(false);
+                if (selectedTrxStudentNis) {
+                    refreshStudentFinancialKPIs(selectedTrxStudentNis, selectedTrxAcademicYear);
+                    renderMauBayarYangMana(selectedTrxStudentNis, selectedTrxAcademicYear);
+                    renderStudentMatrixAndBills(selectedTrxStudentNis);
+                    renderStudentTrxHistory(selectedTrxStudentNis);
+                } else if (state.students && state.students.length > 0) {
+                    selectStudentForPayment(state.students[0].nis);
+                }
+            }
             
             // Close mobile sidebar
             if(window.innerWidth < 1024) {
@@ -3220,6 +3247,8 @@ function respondOutput(obj, callback) {
         function changeTrxAcademicYear(newTa) {
             selectedTrxAcademicYear = newTa;
             if (selectedTrxStudentNis) {
+                syncAllStudentBillsWithPOS(false);
+                refreshStudentFinancialKPIs(selectedTrxStudentNis, newTa);
                 renderMauBayarYangMana(selectedTrxStudentNis, newTa);
                 renderStudentMatrixAndBills(selectedTrxStudentNis);
                 refreshStudentTunggakanHeader(selectedTrxStudentNis, newTa);
@@ -3377,7 +3406,7 @@ function respondOutput(obj, callback) {
             const applicablePOS = (state.jenisPembayaran || []).filter(p => 
                 (p.status || 'aktif').toLowerCase() === 'aktif' && 
                 (!p.tahun_ajaran || p.tahun_ajaran === ta) && 
-                (!p.targetKelas || p.targetKelas === 'Semua Kelas' || p.targetKelas === st.kelas)
+                isStudentEligibleForPos(p, st)
             );
 
             let totalTagihan = 0;
@@ -3553,7 +3582,7 @@ function respondOutput(obj, callback) {
             const allApplicablePOS = (state.jenisPembayaran || []).filter(p => 
                 (p.status || 'aktif').toLowerCase() === 'aktif' && 
                 (!p.tahun_ajaran || p.tahun_ajaran === ta) && 
-                (!p.targetKelas || p.targetKelas === 'Semua Kelas' || p.targetKelas === st.kelas)
+                isStudentEligibleForPos(p, st)
             );
 
             // Filter berdasarkan Toolbar (Status, Kategori, Search Query)
@@ -3772,7 +3801,7 @@ function respondOutput(obj, callback) {
                     : (isSebagian ? 'border-amber-300 dark:border-amber-800 bg-amber-50/20 dark:bg-amber-950/10' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800');
 
                 return `
-                    <div class="rounded-2xl border ${cardBorder} p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative group select-none">
+                    <div class="mau-bayar-card rounded-2xl border ${cardBorder} p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative group select-none" data-pos-id="${pos.id}">
                         <div>
                             <div class="flex items-start justify-between gap-1.5 mb-2.5">
                                 <div class="flex items-center space-x-2.5">
@@ -3917,7 +3946,7 @@ function respondOutput(obj, callback) {
             const activeMasterPOS = (state.jenisPembayaran || []).filter(p => 
                 (p.status || 'aktif').toLowerCase() === 'aktif' && 
                 (!p.tahun_ajaran || p.tahun_ajaran === currentTA) &&
-                (!p.targetKelas || p.targetKelas === 'Semua Kelas' || p.targetKelas === st.kelas)
+                isStudentEligibleForPos(p, st)
             );
             const activePosIds = new Set(activeMasterPOS.map(p => p.id));
             const stBills = (state.bills || []).filter(b => b.nis === nis && (!b.tahun_ajaran || b.tahun_ajaran === currentTA));
